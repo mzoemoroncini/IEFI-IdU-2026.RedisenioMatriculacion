@@ -1,5 +1,5 @@
 import { env } from 'cloudflare:workers';
-import { InvalidEnrollment, SubmissionConflict, registerEnrollment } from '../../../db/enrollments.mjs';
+import { InvalidEnrollment, SubmissionConflict, registerEnrollment, listEnrollments } from '../../../db/enrollments.mjs';
 export async function POST(request: Request) {
   const headers={'Cache-Control':'no-store'};
   if(Number(request.headers.get('content-length')||0)>16384) return Response.json({message:'El formulario es demasiado grande.'},{status:413,headers});
@@ -16,3 +16,5 @@ export async function POST(request: Request) {
     return Response.json({message:'No se pudo confirmar el registro. Tus datos se conservaron. Intentá nuevamente.'},{status:503,headers});
   }
 }
+
+export async function GET(){try{return Response.json(await listEnrollments(env.DB),{headers:{"Cache-Control":"no-store"}});}catch{return Response.json({message:"No se pudo cargar la lista."},{status:503});}}

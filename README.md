@@ -13,7 +13,15 @@ La aplicación se publica con una URL: no requiere ejecutar un programa en la co
 5. La confirmación muestra un número `MAT-000001` únicamente después de guardarse en la base de datos.
 6. **Nueva matrícula** inicia otro formulario. El enlace de confirmación permite volver a consultar el registro después de recargar la página.
 
-Las localidades sugeridas no limitan la carga: se puede escribir otra. Se admiten nombres con tildes, apóstrofes y guiones. Limpiar pide confirmación y no borra las matrículas ya guardadas. Los errores conservan los datos ingresados. Durante el registro se bloquean envíos repetidos; reintentar el mismo envío utiliza un identificador único y no crea otra matrícula.
+La provincia determina las localidades disponibles. Cambiarla limpia la localidad anterior. El servidor valida la correspondencia y guarda identificadores y nombres. El catálogo de 24 jurisdicciones y sus localidades está incluido desde GeoRef (Argentina), consultado el 1/11/2026, sin depender de un servicio externo durante el uso. Las matrículas antiguas sin provincia conservan sus datos; al editarlas se completa la ubicación. Se admiten nombres con tildes, apóstrofes y guiones. Limpiar pide confirmación y no borra las matrículas ya guardadas. Los errores conservan los datos ingresados. Durante el registro se bloquean envíos repetidos; reintentar el mismo envío utiliza un identificador único y no crea otra matrícula.
+
+## Administración
+
+- **Matriculados**: listado, búsqueda por estudiante/código, filtros por curso y fecha, edición y eliminación con confirmación.
+- **Cursos**: agregar, editar y eliminar. Los cambios del catálogo no modifican el nombre guardado en matrículas anteriores. Una matrícula puede mantener su curso eliminado al editar otros datos.
+- Las eliminaciones son lógicas. Los registros dejan de aparecer en la interfaz. La versión de cada registro evita sobrescribir cambios simultáneos.
+
+Sitio: https://aula-matriculas-zoe.glassy-mango-3069.chatgpt.site
 
 ## Tecnología y datos
 
@@ -47,6 +55,7 @@ pnpm install --frozen-lockfile
 pnpm test
 pnpm build
 node --import ./scripts/sites-env.mjs ./node_modules/wrangler/bin/wrangler.js d1 execute DB --local --config dist/server/wrangler.json --persist-to .wrangler/state --file drizzle/0000_confused_storm.sql
+node --import ./scripts/sites-env.mjs ./node_modules/wrangler/bin/wrangler.js d1 execute DB --local --config dist/server/wrangler.json --persist-to .wrangler/state --file drizzle/0001_cute_venus.sql
 pnpm dev
 ```
 
@@ -54,10 +63,10 @@ La base local y la alojada son independientes. Aplicar una migración local sola
 
 ## Verificación
 
-- 20 pruebas de validación y persistencia: fechas, nombres, campos obligatorios, consultas, errores de escritura, duplicados por reintento y reapertura de la base.
+- 23 pruebas de validación y persistencia: fechas, nombres, campos obligatorios, consultas, errores de escritura, duplicados por reintento y reapertura de la base.
 - Circuito verificado en navegador: errores iniciales, resumen automático, Conservar/Sí limpiar, alta y recuperación de la matrícula después de recargar.
 - Distribución revisada en computadora y en anchos de 390 y 320 píxeles, sin desbordamiento horizontal.
 
 ## Alcance académico
 
-La interfaz está enfocada en matricular. No incluye pagos, calificaciones, cupos, autenticación propia ni administración de estudiantes. Los estados de carga, error y éxito forman parte del circuito real; no hay un simulador dentro de la pantalla del producto.
+La interfaz está enfocada en matricular. Incluye la gestión de matrículas y del catálogo de cursos. No incluye pagos, calificaciones, cupos ni autenticación propia. Los estados de carga, error y éxito forman parte del circuito real; no hay un simulador dentro de la pantalla del producto.

@@ -4,7 +4,7 @@ export const COURSES = Object.freeze([
   {id:'excel',name:'Excel y análisis de datos'},
   {id:'ux-ui',name:'Diseño UX/UI'}
 ]);
-export const FIELDS = ['courseId','enrollmentDate','lastName','firstName','sex','address','locality'];
+export const FIELDS = ['courseId','enrollmentDate','lastName','firstName','sex','address','provinceId','locality'];
 export const clean = value => typeof value === 'string' ? value.trim().replace(/\s+/gu,' ') : '';
 export function validDate(value) {
   if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
@@ -26,10 +26,12 @@ export function validate(payload, courses = COURSES) {
     const value=clean(payload[field]);
     if (!value || value.length>limit || /[\u0000-\u001f\u007f]/u.test(value)) errors[field]=`Ingresá una ${label} de hasta ${limit} caracteres.`;
   }
+  if(!/^\d{2}$/.test(payload.provinceId||''))errors.provinceId='Seleccioná una provincia.';
+  if(!payload.localityId)errors.locality='Seleccioná una localidad de la provincia elegida.';
   return errors;
 }
 export function normalize(payload) {
-  return Object.fromEntries(FIELDS.map(field=>[field,clean(payload[field])]));
+  return {...Object.fromEntries(FIELDS.map(field=>[field,clean(payload[field])])),localityId:clean(payload.localityId)};
 }
 export function validRequestId(value) {
   return typeof value==='string' && /^[a-f\d]{8}-(?:[a-f\d]{4}-){3}[a-f\d]{12}$/i.test(value) && value!=='00000000-0000-0000-0000-000000000000';

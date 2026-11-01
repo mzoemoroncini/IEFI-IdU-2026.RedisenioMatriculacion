@@ -20,8 +20,9 @@
     </div>
   </header>
   <main id="main" class="page" tabindex="-1">
+    <nav class="tabs" aria-label="Secciones"><button class="active" data-view="entry" aria-current="page">Nueva matrícula</button><button data-view="enrollments">Matriculados</button><button data-view="courses">Cursos</button></nav>
     <div id="entry-content">
-      <div class="page-heading"><div><p class="eyebrow">COMPUTACIÓN Y TECNOLOGÍA</p><h1>Nueva matrícula</h1><p class="subtitle">Registrá un estudiante en un curso de computación.</p></div><span class="required-note"><span aria-hidden="true">i</span> Los campos con * son obligatorios</span></div>
+      <div class="page-heading"><div><p class="eyebrow">COMPUTACIÓN Y TECNOLOGÍA</p><h1 id="form-title">Nueva matrícula</h1><p class="subtitle">Registrá un estudiante en un curso de computación.</p></div><span class="required-note"><span aria-hidden="true">i</span> Los campos con * son obligatorios</span></div>
       <div class="page-grid">
         <form id="enrollment-form" novalidate autocomplete="on">
           <section class="form-card" aria-labelledby="course-heading" data-section="course">
@@ -43,7 +44,8 @@
             <div class="section-heading"><span class="section-icon" aria-hidden="true">03</span><div><h2 id="address-heading">Domicilio</h2><p>Lugar de residencia del estudiante.</p></div><span class="section-state" id="state-address">Pendiente</span></div>
             <div class="field-grid">
               <div class="field"><label for="address">Dirección <span class="required">*</span></label><input id="address" name="address" autocomplete="street-address" maxlength="200" placeholder="Calle y número (ej.: Av. Colón 1450)" required aria-describedby="address-error"><p class="field-error" id="address-error"></p></div>
-              <div class="field"><label for="locality">Localidad <span class="required">*</span></label><input id="locality" name="locality" autocomplete="address-level2" list="localities" maxlength="100" placeholder="Ingresá o seleccioná una localidad" required aria-describedby="locality-error locality-help"><datalist id="localities"><option value="Córdoba"><option value="Pilar"><option value="Río Segundo"><option value="Alta Gracia"><option value="Villa María"></datalist><p class="field-error" id="locality-error"></p><p class="field-help" id="locality-help">Podés elegir una sugerida o escribir cualquier otra.</p></div>
+              <div class="field"><label for="provinceId">Provincia <span class="required">*</span></label><select id="provinceId" name="provinceId" required aria-describedby="provinceId-error"><option value="">Cargando provincias…</option></select><p class="field-error" id="provinceId-error"></p></div>
+              <div class="field"><label for="locality">Localidad <span class="required">*</span></label><select id="locality" name="locality" required disabled aria-describedby="locality-error locality-help"><option value="">Elegí una provincia primero</option></select><p class="field-error" id="locality-error"></p><p class="field-help" id="locality-help">Las opciones corresponden a la provincia seleccionada.</p><button type="button" class="text-button" id="retry-location" hidden>Volver a cargar ubicaciones</button></div>
             </div>
           </section>
           <div id="submission-error" class="error-banner" role="alert" hidden><span class="error-symbol" aria-hidden="true">!</span><div><strong id="error-title">No se pudo registrar la matrícula</strong><p id="error-message"></p></div></div>
@@ -58,12 +60,16 @@
         </aside>
       </div>
     </div>
+    <section id="enrollments-panel" hidden><div class="page-heading"><div><p class="eyebrow">ADMINISTRACIÓN</p><h1>Matriculados</h1><p class="subtitle">Consultá y administrá las matrículas guardadas.</p></div><button id="refresh-enrollments" class="button secondary">Actualizar lista</button></div><div class="form-card"><div class="filters"><div class="field"><label for="search-enrollments">Buscar estudiante</label><input id="search-enrollments" type="search" placeholder="Nombre, apellido o código"></div><div class="field"><label for="filter-course">Curso</label><select id="filter-course"><option value="">Todos los cursos</option></select></div><div class="field"><label for="filter-date">Fecha de matrícula</label><input id="filter-date" type="date"></div></div><p id="enrollments-status" role="status"></p><div class="table-wrap"><table><thead><tr><th>Código / fecha</th><th>Estudiante</th><th>Curso</th><th>Ubicación</th><th>Acciones</th></tr></thead><tbody id="enrollments-body"></tbody></table></div></div></section>
+    <section id="courses-panel" hidden><div class="page-heading"><div><p class="eyebrow">CATÁLOGO</p><h1>Cursos</h1><p class="subtitle">Administrá los cursos disponibles para nuevas matrículas.</p></div><button id="add-course" class="button primary">Agregar curso</button></div><div class="form-card"><p class="field-help">Al eliminar o renombrar un curso, las matrículas anteriores conservan el nombre que tenían al guardarse.</p><p id="courses-status" role="status"></p><div class="table-wrap"><table><thead><tr><th>Nombre del curso</th><th>Acciones</th></tr></thead><tbody id="courses-body"></tbody></table></div></div></section>
     <section id="success-panel" class="success-panel" hidden aria-labelledby="success-heading">
       <div class="success-check" aria-hidden="true">✓</div><p class="eyebrow">REGISTRO COMPLETADO</p><h1 id="success-heading" tabindex="-1">Matrícula registrada</h1><p class="subtitle">La inscripción quedó guardada correctamente.</p><span class="registration-code" id="registration-code"></span><dl id="saved-detail" class="saved-detail"></dl><p class="saved-time" id="saved-time"></p><button id="new-enrollment" class="button primary" type="button">Nueva matrícula <span aria-hidden="true">→</span></button>
     </section>
   </main>
   <footer class="footer"><div><strong>Aula · Formación digital</strong><span>— Sistema de Matrículas</span></div></footer>
   <dialog id="clear-dialog" aria-labelledby="clear-question" aria-describedby="clear-description"><form method="dialog"><span class="dialog-icon" aria-hidden="true">↺</span><h2 id="clear-question">¿Querés borrar los datos ingresados?</h2><p id="clear-description">El formulario volverá a estar vacío. Las matrículas ya registradas se conservan.</p><div class="dialog-actions"><button class="button secondary" value="cancel" id="keep-data" autofocus>Conservar</button><button class="button primary" value="clear">Sí, limpiar</button></div></form></dialog>
+  <dialog id="course-dialog" aria-labelledby="course-dialog-title"><form id="course-form"><h2 id="course-dialog-title">Agregar curso</h2><div class="field"><label for="course-name">Nombre del curso *</label><input id="course-name" maxlength="100" required></div><p id="course-dialog-error" class="field-error" role="alert"></p><div class="dialog-actions"><button type="button" id="cancel-course" class="button secondary">Cancelar</button><button class="button primary">Guardar curso</button></div></form></dialog>
+  <dialog id="delete-dialog" aria-labelledby="delete-title"><h2 id="delete-title">Confirmar eliminación</h2><p id="delete-message"></p><p class="field-error" id="delete-error" role="alert"></p><div class="dialog-actions"><button id="cancel-delete" class="button secondary">Cancelar</button><button id="confirm-delete" class="button danger">Eliminar</button></div></dialog>
   <div id="live-status" class="sr-only" role="status" aria-live="polite"></div>
 </body>
 </html>

@@ -5,11 +5,11 @@ import {readFileSync,readdirSync,mkdtempSync,rmSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {COURSES,validate,validDate,normalize,createRequestId,validRequestId} from '../public/rules.js';
-import {registerEnrollment,findEnrollment,InvalidEnrollment,SubmissionConflict} from '../db/enrollments.mjs';
-const data=()=>({requestId:crypto.randomUUID(),courseId:'web',enrollmentDate:'2026-11-01',lastName:"Pérez-García O’Connor",firstName:'María José',sex:'Prefiero no indicar',address:'Av. Colón 1450',locality:'Pilar'});
+import {registerEnrollment,findEnrollment,updateEnrollment,deleteEnrollment,listEnrollments,InvalidEnrollment,SubmissionConflict} from '../db/enrollments.mjs';
+const data=()=>({requestId:crypto.randomUUID(),courseId:'web',enrollmentDate:'2026-11-01',lastName:"Pérez-García O’Connor",firstName:'María José',sex:'Prefiero no indicar',address:'Av. Colón 1450',locality:'Pilar',provinceId:'14',localityId:'14119160'});
 function adapter(sqlite){
  return {
-  prepare(sql){return {bind(...values){return {...this,values};},async first(){return sqlite.prepare(sql).get(...(this.values||[]))||null;},execute(){const statement=sqlite.prepare(sql);return /^\s*SELECT/i.test(sql)?{results:statement.all(...(this.values||[])),meta:{changes:0}}:{results:[],meta:{changes:Number(statement.run(...(this.values||[])).changes)}};}};},
+  prepare(sql){return {bind(...values){return {...this,values};},async all(){return this.execute();},async first(){return sqlite.prepare(sql).get(...(this.values||[]))||null;},execute(){const statement=sqlite.prepare(sql);return /^\s*SELECT/i.test(sql)?{results:statement.all(...(this.values||[])),meta:{changes:0}}:{results:[],meta:{changes:Number(statement.run(...(this.values||[])).changes)}};}};},
   async batch(statements){sqlite.exec('BEGIN');try{const result=statements.map(statement=>statement.execute());sqlite.exec('COMMIT');return result;}catch(error){sqlite.exec('ROLLBACK');throw error;}}
  };
 }
@@ -19,7 +19,7 @@ test('Acepta nombres con tildes, apóstrofes y guiones',()=>assert.deepEqual(val
 test('La fecha anterior no se rechaza',()=>assert.deepEqual(validate({...data(),enrollmentDate:'2020-01-02'}),{}));
 test('Valida fechas reales y años bisiestos',()=>{assert.equal(validDate('2024-02-29'),true);for(const value of ['2025-02-29','2026-13-01','2026-04-31','01/11/2026','',null])assert.equal(validDate(value),false);});
 test('Todos los campos originales son obligatorios',()=>{for(const field of ['courseId','enrollmentDate','lastName','firstName','sex','address','locality'])assert.ok(validate({...data(),[field]:'   '})[field]);});
-test('Acepta una localidad que no esté en las sugerencias',()=>assert.deepEqual(validate({...data(),locality:'Villa del Rosario'}),{}));
+test('Requiere provincia y localidad seleccionadas',()=>{assert.ok(validate({...data(),provinceId:''}).provinceId);assert.ok(validate({...data(),localityId:''}).locality);});
 test('Rechaza nombres inválidos y límites de longitud',()=>{for(const value of ['123','<script>','a'.repeat(101)])assert.ok(validate({...data(),firstName:value}).firstName);assert.ok(validate({...data(),address:'a'.repeat(201)}).address);});
 test('Normaliza espacios sin alterar los nombres',()=>assert.equal(normalize({...data(),firstName:'  María   José  '}).firstName,'María José'));
 test('Rechaza curso o sexo ajenos a las opciones',()=>{assert.ok(validate({...data(),courseId:'otro'}).courseId);assert.ok(validate({...data(),sex:'otro'}).sex);});
@@ -35,3 +35,8 @@ test('Una matrícula inexistente devuelve vacío',async()=>{const sqlite=databas
 
 test('Genera un identificador de envío válido',()=>assert.equal(validRequestId(createRequestId()),true));
 test('Permite la vista local sin randomUUID usando getRandomValues',()=>assert.equal(createRequestId({getRandomValues:bytes=>bytes.fill(255)}),'ffffffff-ffff-4fff-bfff-ffffffffffff'));
+
+ test('Impide guardar una localidad de otra provincia',async()=>{const sql=database();try{await assert.rejects(()=>registerEnrollment(adapter(sql),{...data(),provinceId:'06'}),InvalidEnrollment);}finally{sql.close();}});
+ test('Edita y elimina una matrícula sin aceptar versiones anteriores',async()=>{const sql=database();try{const db=adapter(sql);const e=(await registerEnrollment(db,data())).enrollment;const changed=await updateEnrollment(db,e.id,{...e,address:'Nueva calle 55'});assert.equal(changed.address,'Nueva calle 55');await assert.rejects(()=>updateEnrollment(db,e.id,{...e,address:'Vieja calle'}),SubmissionConflict);await deleteEnrollment(db,e.id,changed.version);assert.equal(await findEnrollment(db,e.id),null);assert.equal((await listEnrollments(db)).length,0);}finally{sql.close();}});
+
+ test('Renombrar y eliminar cursos conserva las matrículas anteriores',async()=>{const {saveCourse,deleteCourse,listCourses}=await import('../db/courses.mjs');const sql=database();try{const db=adapter(sql);const e=(await registerEnrollment(db,data())).enrollment;await saveCourse(db,{name:'Web actual',version:1},'web');assert.equal((await findEnrollment(db,e.id)).courseName,'Desarrollo web');await deleteCourse(db,'web',2);assert.ok(!(await listCourses(db)).some(c=>c.id==='web'));assert.equal((await findEnrollment(db,e.id)).courseName,'Desarrollo web');await assert.rejects(()=>registerEnrollment(db,data()),InvalidEnrollment);const changed=await updateEnrollment(db,e.id,{...e,address:'Nueva calle 1'});assert.equal(changed.courseName,'Desarrollo web');const c=await saveCourse(db,{name:'Curso nuevo'});assert.ok((await listCourses(db)).some(x=>x.id===c.id));}finally{sql.close();}});
