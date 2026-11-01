@@ -1,0 +1,37 @@
+import {test} from 'node:test';
+import assert from 'node:assert/strict';
+import {DatabaseSync} from 'node:sqlite';
+import {readFileSync,readdirSync,mkdtempSync,rmSync} from 'node:fs';
+import {tmpdir} from 'node:os';
+import {join} from 'node:path';
+import {COURSES,validate,validDate,normalize,createRequestId,validRequestId} from '../public/rules.js';
+import {registerEnrollment,findEnrollment,InvalidEnrollment,SubmissionConflict} from '../db/enrollments.mjs';
+const data=()=>({requestId:crypto.randomUUID(),courseId:'web',enrollmentDate:'2026-11-01',lastName:"Pérez-García O’Connor",firstName:'María José',sex:'Prefiero no indicar',address:'Av. Colón 1450',locality:'Pilar'});
+function adapter(sqlite){
+ return {
+  prepare(sql){return {bind(...values){return {...this,values};},async first(){return sqlite.prepare(sql).get(...(this.values||[]))||null;},execute(){const statement=sqlite.prepare(sql);return /^\s*SELECT/i.test(sql)?{results:statement.all(...(this.values||[])),meta:{changes:0}}:{results:[],meta:{changes:Number(statement.run(...(this.values||[])).changes)}};}};},
+  async batch(statements){sqlite.exec('BEGIN');try{const result=statements.map(statement=>statement.execute());sqlite.exec('COMMIT');return result;}catch(error){sqlite.exec('ROLLBACK');throw error;}}
+ };
+}
+function database(path=':memory:'){const sqlite=new DatabaseSync(path);for(const file of readdirSync(new URL('../drizzle/',import.meta.url)).filter(name=>name.endsWith('.sql')).sort())sqlite.exec(readFileSync(new URL('../drizzle/'+file,import.meta.url),'utf8'));return sqlite;}
+test('Los cursos actuales reemplazan las opciones antiguas',()=>assert.equal(COURSES.length,4));
+test('Acepta nombres con tildes, apóstrofes y guiones',()=>assert.deepEqual(validate(data()),{}));
+test('La fecha anterior no se rechaza',()=>assert.deepEqual(validate({...data(),enrollmentDate:'2020-01-02'}),{}));
+test('Valida fechas reales y años bisiestos',()=>{assert.equal(validDate('2024-02-29'),true);for(const value of ['2025-02-29','2026-13-01','2026-04-31','01/11/2026','',null])assert.equal(validDate(value),false);});
+test('Todos los campos originales son obligatorios',()=>{for(const field of ['courseId','enrollmentDate','lastName','firstName','sex','address','locality'])assert.ok(validate({...data(),[field]:'   '})[field]);});
+test('Acepta una localidad que no esté en las sugerencias',()=>assert.deepEqual(validate({...data(),locality:'Villa del Rosario'}),{}));
+test('Rechaza nombres inválidos y límites de longitud',()=>{for(const value of ['123','<script>','a'.repeat(101)])assert.ok(validate({...data(),firstName:value}).firstName);assert.ok(validate({...data(),address:'a'.repeat(201)}).address);});
+test('Normaliza espacios sin alterar los nombres',()=>assert.equal(normalize({...data(),firstName:'  María   José  '}).firstName,'María José'));
+test('Rechaza curso o sexo ajenos a las opciones',()=>{assert.ok(validate({...data(),courseId:'otro'}).courseId);assert.ok(validate({...data(),sex:'otro'}).sex);});
+test('Guarda y recupera todos los campos en una base SQLite real',async()=>{const sqlite=database();try{const db=adapter(sqlite);const input=data();const result=await registerEnrollment(db,input);assert.equal(result.created,true);assert.equal(result.enrollment.code,'MAT-000001');const saved=await findEnrollment(db,result.enrollment.id);assert.equal(saved.lastName,input.lastName);assert.equal(saved.locality,input.locality);assert.equal(saved.courseName,'Desarrollo web');assert.equal(saved.enrollmentDate,input.enrollmentDate);}finally{sqlite.close();}});
+test('Reintentar el mismo envío no duplica la matrícula',async()=>{const sqlite=database();try{const db=adapter(sqlite);const input=data();const first=await registerEnrollment(db,input);const retry=await registerEnrollment(db,input);assert.equal(retry.created,false);assert.equal(first.enrollment.id,retry.enrollment.id);assert.equal(sqlite.prepare('SELECT COUNT(*) AS n FROM enrollments').get().n,1);}finally{sqlite.close();}});
+test('El mismo identificador con otros datos no sobrescribe el registro',async()=>{const sqlite=database();try{const db=adapter(sqlite);const input=data();const first=await registerEnrollment(db,input);await assert.rejects(()=>registerEnrollment(db,{...input,address:'Otra calle 2'}),SubmissionConflict);assert.equal((await findEnrollment(db,first.enrollment.id)).address,input.address);}finally{sqlite.close();}});
+test('Personas con el mismo nombre pueden ser matrículas distintas',async()=>{const sqlite=database();try{const db=adapter(sqlite);await registerEnrollment(db,data());await registerEnrollment(db,data());assert.equal(sqlite.prepare('SELECT COUNT(*) AS n FROM enrollments').get().n,2);}finally{sqlite.close();}});
+test('La validación de servidor evita guardar campos vacíos y envíos sin identificador',async()=>{const sqlite=database();try{const db=adapter(sqlite);await assert.rejects(()=>registerEnrollment(db,{...data(),requestId:'',firstName:' '}),InvalidEnrollment);assert.equal(sqlite.prepare('SELECT COUNT(*) AS n FROM enrollments').get().n,0);}finally{sqlite.close();}});
+test('Direcciones con comillas se guardan mediante parámetros',async()=>{const sqlite=database();try{const db=adapter(sqlite);const address="Calle 'especial'; DROP TABLE enrollments; --";const result=await registerEnrollment(db,{...data(),address});assert.equal((await findEnrollment(db,result.enrollment.id)).address,address);assert.equal(sqlite.prepare('SELECT COUNT(*) AS n FROM enrollments').get().n,1);}finally{sqlite.close();}});
+test('Los errores de escritura no presentan una matrícula como guardada',async()=>{const sqlite=database();try{sqlite.exec("CREATE TRIGGER fail BEFORE INSERT ON enrollments BEGIN SELECT RAISE(ABORT,'prueba'); END");await assert.rejects(()=>registerEnrollment(adapter(sqlite),data()));assert.equal(sqlite.prepare('SELECT COUNT(*) AS n FROM enrollments').get().n,0);}finally{sqlite.close();}});
+test('El registro persiste al cerrar y reabrir SQLite',async()=>{const directory=mkdtempSync(join(tmpdir(),'aula-'));const path=join(directory,'matriculas.db');let sqlite=database(path);try{const saved=await registerEnrollment(adapter(sqlite),data());sqlite.close();sqlite=new DatabaseSync(path);assert.equal((await findEnrollment(adapter(sqlite),saved.enrollment.id)).code,saved.enrollment.code);}finally{sqlite.close();rmSync(directory,{recursive:true});}});
+test('Una matrícula inexistente devuelve vacío',async()=>{const sqlite=database();try{assert.equal(await findEnrollment(adapter(sqlite),9999),null);}finally{sqlite.close();}});
+
+test('Genera un identificador de envío válido',()=>assert.equal(validRequestId(createRequestId()),true));
+test('Permite la vista local sin randomUUID usando getRandomValues',()=>assert.equal(createRequestId({getRandomValues:bytes=>bytes.fill(255)}),'ffffffff-ffff-4fff-bfff-ffffffffffff'));
