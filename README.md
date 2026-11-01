@@ -4,7 +4,7 @@ Interfaz web responsive para la IEFI de Interfaz de Usuario. El formulario redis
 
 ## Uso
 
-La aplicación se publica con una URL: no requiere ejecutar un programa en la computadora del visitante. El acceso del sitio es privado inicialmente.
+La aplicación se publica con una URL: no requiere ejecutar un programa en la computadora del visitante. El acceso público muestra el inicio de sesión propio; las páginas y API de administración exigen una sesión válida.
 
 1. Elegir un curso y la fecha de matrícula. Se permiten fechas anteriores.
 2. Completar los datos del estudiante y su domicilio.
@@ -14,6 +14,21 @@ La aplicación se publica con una URL: no requiere ejecutar un programa en la co
 6. **Nueva matrícula** inicia otro formulario. El enlace de confirmación permite volver a consultar el registro después de recargar la página.
 
 La provincia determina las localidades disponibles. Cambiarla limpia la localidad anterior. El servidor valida la correspondencia y guarda identificadores y nombres. El catálogo de 24 jurisdicciones y sus localidades está incluido desde GeoRef (Argentina), consultado el 1/11/2026, sin depender de un servicio externo durante el uso. Las matrículas antiguas sin provincia conservan sus datos; al editarlas se completa la ubicación. Se admiten nombres con tildes, apóstrofes y guiones. Limpiar pide confirmación y no borra las matrículas ya guardadas. Los errores conservan los datos ingresados. Durante el registro se bloquean envíos repetidos; reintentar el mismo envío utiliza un identificador único y no crea otra matrícula.
+
+## Acceso y entrega en Classroom
+
+El enlace abre un formulario de correo y contraseña sin exigir una cuenta de ChatGPT. No hay registro público de usuarios.
+
+- La pantalla muestra la cuenta pública de demostración `profe@aula.local` y su contraseña, con un botón para completar los datos. Esta exposición es intencional para la entrega académica.
+- La cuenta `zoe@aula.local` administra los datos originales; su contraseña no se publica en el código ni en la pantalla.
+- Las sesiones duran 8 horas. Cerrar sesión invalida el token en el servidor. Las credenciales configuradas como secretos incluyen hashes PBKDF2-SHA256 con sal individual y pepper del servidor; las contraseñas generadas tienen alta entropía.
+- Cookies HttpOnly, Secure en HTTPS y SameSite=Strict. Las operaciones de escritura comprueban el origen. Los intentos de acceso repetidos se limitan por cuenta e IP.
+- La cuenta docente utiliza tablas separadas `demo_enrollments` y `demo_courses`, con 3 matrículas ficticias iniciales. Puede probar el CRUD completo sin acceder a las tablas de administración. Es un espacio de prueba compartido entre quienes usen esa cuenta; no cargar datos personales reales.
+- La inicialización de ejemplos no restaura registros eliminados ni sobrescribe ediciones.
+
+### Configuración para desarrollar
+
+`node scripts/provision-access.mjs` genera dos credenciales nuevas **solo para el entorno local**, escribe hashes y pepper en `.dev.vars` (ignorado por Git) y entrega las contraseñas por stdout. Mantener ese resultado privado. Actualizar también el bloque de demostración en `assets/login.html` si se cambia su contraseña local. Para publicar, configurar `AULA_ACCOUNTS_JSON` y `AULA_PASSWORD_PEPPER` como secretos del servidor; nunca en archivos versionados. Reiniciar la vista local tras configurar variables.
 
 ## Administración
 
@@ -56,6 +71,7 @@ pnpm test
 pnpm build
 node --import ./scripts/sites-env.mjs ./node_modules/wrangler/bin/wrangler.js d1 execute DB --local --config dist/server/wrangler.json --persist-to .wrangler/state --file drizzle/0000_confused_storm.sql
 node --import ./scripts/sites-env.mjs ./node_modules/wrangler/bin/wrangler.js d1 execute DB --local --config dist/server/wrangler.json --persist-to .wrangler/state --file drizzle/0001_cute_venus.sql
+node --import ./scripts/sites-env.mjs ./node_modules/wrangler/bin/wrangler.js d1 execute DB --local --config dist/server/wrangler.json --persist-to .wrangler/state --file drizzle/0002_fixed_kylun.sql
 pnpm dev
 ```
 
@@ -63,10 +79,12 @@ La base local y la alojada son independientes. Aplicar una migración local sola
 
 ## Verificación
 
-- 23 pruebas de validación y persistencia: fechas, nombres, campos obligatorios, consultas, errores de escritura, duplicados por reintento y reapertura de la base.
+- 32 pruebas de validación y persistencia: fechas, nombres, campos obligatorios, consultas, errores de escritura, duplicados por reintento y reapertura de la base.
 - Circuito verificado en navegador: errores iniciales, resumen automático, Conservar/Sí limpiar, alta y recuperación de la matrícula después de recargar.
 - Distribución revisada en computadora y en anchos de 390 y 320 píxeles, sin desbordamiento horizontal.
 
 ## Alcance académico
 
-La interfaz está enfocada en matricular. Incluye la gestión de matrículas y del catálogo de cursos. No incluye pagos, calificaciones, cupos ni autenticación propia. Los estados de carga, error y éxito forman parte del circuito real; no hay un simulador dentro de la pantalla del producto.
+La interfaz está enfocada en matricular. Incluye la gestión de matrículas y del catálogo de cursos. No incluye pagos, calificaciones, cupos ni gestión pública de usuarios. Los estados de carga, error y éxito forman parte del circuito real; no hay un simulador dentro de la pantalla del producto.
+
+La verificación de acceso cubre contraseñas incorrectas, expiración, cierre de sesión, revocación por cambio de configuración, límites de intentos, origen de solicitudes y aislamiento de demostración.

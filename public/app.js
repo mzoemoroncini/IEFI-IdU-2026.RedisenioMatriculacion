@@ -39,7 +39,7 @@ function reset(){
   hideBanner();busy(false);baseline=fingerprint();preview();
 }
 async function request(url,options={}){
-  const response=await fetch(url,{...options,signal:AbortSignal.timeout(15000)});
+  const response=await fetch(url,{...options,signal:AbortSignal.timeout(15000)});if(response.status===401){registered=true;location.replace('/');throw Error('Sesión terminada');}
   const data=await response.json();return {response,data};
 }
 async function loadCourses(){
@@ -142,3 +142,8 @@ $('course-form').addEventListener('submit',async event=>{event.preventDefault();
 function askDelete(type,item){deletion={type,item};$('delete-message').textContent=type==='curso'?`¿Eliminar “${item.name}” del catálogo? Las matrículas guardadas se conservan.`:`¿Eliminar la matrícula ${item.code} de ${item.lastName}, ${item.firstName}?`;$('delete-error').textContent='';$('delete-dialog').showModal();$('cancel-delete').focus();}
 $('cancel-delete').addEventListener('click',()=>$('delete-dialog').close());
 $('confirm-delete').addEventListener('click',async()=>{const {type,item}=deletion;$('confirm-delete').disabled=true;$('cancel-delete').disabled=true;try{const {response,data}=await request('/api/'+(type==='curso'?'cursos':'matriculas')+'/'+item.id,{method:'DELETE',headers:{'Content-Type':'application/json'},body:JSON.stringify({version:item.version})});if(!response.ok)throw Error(data.message);$('delete-dialog').close();if(type==='curso')await refreshCatalog();else await refreshEnrollments();}catch(error){$('delete-error').textContent=error.message||'No se pudo eliminar.';}finally{$('confirm-delete').disabled=false;$('cancel-delete').disabled=false;}});
+
+const identity=await request('/api/auth');if(identity.response.ok){$('session-name').textContent=identity.data.name;$('demo-notice').hidden=identity.data.role!=='demo';}
+$('logout-button').addEventListener('click',async()=>{if(dirty()){if(!confirm('Tenés cambios sin guardar. ¿Querés cerrar sesión y descartarlos?'))return;}$('logout-button').disabled=true;try{const response=await fetch('/api/auth',{method:'DELETE'});if(!response.ok)throw Error();registered=true;location.replace('/');}catch{$('logout-error').textContent='No se pudo cerrar sesión. Intentá nuevamente.';$('logout-button').disabled=false;}});
+
+window.addEventListener('pageshow',event=>{if(event.persisted)location.reload();});

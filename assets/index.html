@@ -16,12 +16,12 @@
     <div class="topbar-inner">
       <div class="brand" aria-label="Aula · Formación digital"><span class="brand-mark" aria-hidden="true">a</span><span class="brand-title">Aula <span>· Formación digital</span></span></div>
       <span class="module-label"><span aria-hidden="true" class="module-dot"></span>Gestión de matrículas</span>
-      <span class="admin-label">Administración</span>
+      <div class="session-controls"><span class="admin-label" id="session-name">Administración</span><button id="logout-button" class="text-button" type="button">Cerrar sesión</button></div>
     </div>
   </header>
   <main id="main" class="page" tabindex="-1">
     <nav class="tabs" aria-label="Secciones"><button class="active" data-view="entry" aria-current="page">Nueva matrícula</button><button data-view="enrollments">Matriculados</button><button data-view="courses">Cursos</button></nav>
-    <div id="entry-content">
+    <p id="demo-notice" class="demo-notice" hidden>Cuenta de demostración · Los datos de este espacio son ficticios y están separados de las matrículas de administración.</p><p id="logout-error" class="field-error" role="alert"></p><div id="entry-content">
       <div class="page-heading"><div><p class="eyebrow">COMPUTACIÓN Y TECNOLOGÍA</p><h1 id="form-title">Nueva matrícula</h1><p class="subtitle">Registrá un estudiante en un curso de computación.</p></div><span class="required-note"><span aria-hidden="true">i</span> Los campos con * son obligatorios</span></div>
       <div class="page-grid">
         <form id="enrollment-form" novalidate autocomplete="on">
