@@ -34,7 +34,7 @@ function errorBanner(title,message){$('error-title').textContent=title;$('error-
 function hideBanner(){$('submission-error').hidden=true;}
 function busy(value){sending=value;for(const b of document.querySelectorAll("[data-view]"))b.disabled=value;form.setAttribute('aria-busy',String(value));for(const control of form.querySelectorAll('input,select,button'))control.disabled=value;$('courseId').disabled=value||!coursesReady;fields.locality.disabled=value||!localities.length;$('submit-button').disabled=value||!coursesReady;$('submit-label').textContent=value?'Guardando…':editing?'Guardar cambios':'Registrar matrícula';$('submit-button').querySelector('.spinner').hidden=!value;$('submit-button').querySelector('.button-arrow').hidden=value;}
 function reset(){
-  locationSequence++;editing=null;$('form-title').textContent='Nueva matrícula';localities=[];fields.locality.replaceChildren(new Option('Elegí una provincia primero',''));fields.locality.disabled=true;
+  locationSequence++;editing=null;$('cancel-edit').hidden=true;$('clear-button').hidden=false;$('form-title').textContent='Nueva matrícula';localities=[];fields.locality.replaceChildren(new Option('Elegí una provincia primero',''));fields.locality.disabled=true;
   form.reset();registered=false;touched.clear();submission=null;fields.enrollmentDate.value=today();fields.enrollmentDate.defaultValue=fields.enrollmentDate.value;
   for(const name of FIELDS){fields[name].removeAttribute('aria-invalid');$(name+'-error').textContent='';}
   hideBanner();busy(false);baseline=fingerprint();preview();
@@ -80,11 +80,12 @@ form.addEventListener('submit',async event=>{
       return;
     }
     if(!Number.isSafeInteger(saved.id)||!saved.code)throw new Error('invalid response');
-    renderSuccess(saved);history.replaceState(null,'',`#matricula/${saved.id}`);
+    renderSuccess(saved,editing?'updated':'created');history.replaceState(null,'',`#matricula/${saved.id}`);
   }catch{errorBanner('No se pudo confirmar el registro','Tus datos se conservaron. Reintentá con el botón de abajo. No se duplicará el mismo envío.');}
   finally{busy(false);if(!registered&&!$('submission-error').hidden)$('submit-label').textContent='Reintentar registro';$('live-status').textContent=registered?'Matrícula registrada.':'El registro no pudo confirmarse. Los datos se conservaron.';}
 });
-function renderSuccess(saved){
+function renderSuccess(saved,mode='saved'){
+  $('success-heading').textContent=mode==='updated'?'Matrícula actualizada':mode==='created'?'Matrícula registrada':'Matrícula guardada';$('success-eyebrow').textContent=mode==='updated'?'CAMBIOS GUARDADOS':'REGISTRO COMPLETADO';$('success-message').textContent=mode==='updated'?'Los cambios se guardaron correctamente. Se conservó el código de matrícula.':'La inscripción quedó guardada correctamente.';
   registered=true;$('entry-content').hidden=true;$('enrollments-panel').hidden=true;$('courses-panel').hidden=true;$('success-panel').hidden=false;$('registration-code').textContent=saved.code;
   const detail=$('saved-detail');detail.replaceChildren();
   for(const [label,value] of [['Curso',saved.courseName],['Estudiante',`${saved.lastName}, ${saved.firstName}`],['Fecha de matrícula',dateLabel(saved.enrollmentDate)],['Sexo',saved.sex],['Dirección',saved.address],['Provincia',saved.provinceName||'No informada'],['Localidad',saved.locality]]){
@@ -112,10 +113,11 @@ async function loadLocalities(selected=''){
 }
 fields.provinceId.addEventListener('change',()=>loadLocalities());
 $('retry-location').addEventListener('click',async()=>{await loadProvinces();await loadLocalities();});
-let enrollments=[];let catalog=[];let courseEditing=null;let deletion=null;let courseReturnFocus=null;let deleteReturnFocus=null;
+let currentView='entry';let enrollments=[];let catalog=[];let courseEditing=null;let deletion=null;let courseReturnFocus=null;let deleteReturnFocus=null;
 function element(tag,text){const e=document.createElement(tag);e.textContent=text;return e;}
 function action(text,fn,subject){const b=element('button',text);b.setAttribute('aria-label',text+' '+subject);b.type='button';b.className='text-button';b.addEventListener('click',fn);return b;}
 async function showView(view){
+ currentView=view;
  if(view==='entry'&&registered)reset();
  for(const [key,id] of Object.entries({entry:'entry-content',enrollments:'enrollments-panel',courses:'courses-panel'}))$(id).hidden=key!==view;
  $('success-panel').hidden=true;for(const b of document.querySelectorAll('[data-view]')){b.classList.toggle('active',b.dataset.view===view);if(b.dataset.view===view)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current');}
@@ -130,21 +132,22 @@ async function refreshEnrollments(){
 const searchKey=s=>s.normalize('NFD').replace(/\p{M}/gu,'').toLowerCase();
 function renderEnrollments(){
  const query=searchKey($('search-enrollments').value.trim());const rows=enrollments.filter(e=>(!query||searchKey(e.lastName+' '+e.firstName+' '+e.code).includes(query))&&(!$('filter-course').value||e.courseId===$('filter-course').value)&&(!$('filter-date').value||e.enrollmentDate===$('filter-date').value));
- $('enrollments-body').replaceChildren();$('enrollments-status').textContent=rows.length?`${rows.length} matrícula(s)`:'No hay matrículas para mostrar.';
+ const filtered=!!(query||$('filter-course').value||$('filter-date').value);$('clear-filters').hidden=!filtered;
+ $('enrollments-body').replaceChildren();$('enrollments-status').textContent=rows.length?`${rows.length} de ${enrollments.length} matrícula(s)${filtered?' · Filtros aplicados':''}`:filtered?'No hay coincidencias. Probá otro dato o usá Limpiar filtros.':'Todavía no hay matrículas. Registrá la primera desde Nueva matrícula.';
  for(const e of rows){const tr=document.createElement('tr');for(const value of [e.code+' · '+dateLabel(e.enrollmentDate),e.lastName+', '+e.firstName,e.courseName,[e.locality,e.provinceName||'Provincia no informada'].join(', ')])tr.append(element('td',value));const td=document.createElement('td');td.className='row-actions';td.append(action('Editar',()=>editEnrollment(e),e.code+' de '+e.lastName+', '+e.firstName),action('Eliminar',()=>askDelete('matricula',e),e.code+' de '+e.lastName+', '+e.firstName));tr.append(td);$('enrollments-body').append(tr);}
 }
 for(const id of ['search-enrollments','filter-course','filter-date'])$(id).addEventListener('input',renderEnrollments);
 $('refresh-enrollments').addEventListener('click',refreshEnrollments);
-async function editEnrollment(e){reset();editing=e;await showView('entry');$('form-title').textContent='Editar '+e.code;for(const name of FIELDS)if(name!=='locality')fields[name].value=e[name]||'';await loadLocalities(e.localityId);baseline=fingerprint();busy(false);preview();$('form-title').scrollIntoView({block:'start'});fields.lastName.focus();}
+async function editEnrollment(e){if(dirty()&&!confirm('Tenés datos sin guardar. ¿Querés descartarlos para editar esta matrícula?'))return;reset();editing=e;$('cancel-edit').hidden=false;$('clear-button').hidden=true;await showView('entry');$('form-title').textContent='Editar '+e.code;for(const name of FIELDS)if(name!=='locality')fields[name].value=e[name]||'';await loadLocalities(e.localityId);baseline=fingerprint();busy(false);preview();$('form-title').scrollIntoView({block:'start'});fields.lastName.focus();}
 async function refreshCatalog(){
  const focused=document.activeElement;$('courses-status').textContent='Cargando cursos…';try{const {response,data}=await request('/api/cursos');if(!response.ok)throw Error();catalog=data;$('courses-body').replaceChildren();$('courses-status').textContent=data.length?`${data.length} curso(s) disponible(s)`:'Todavía no hay cursos. Agregá el primero.';for(const c of data){const tr=document.createElement('tr');const nameCell=element('th',c.name);nameCell.scope='row';tr.append(nameCell);const td=document.createElement('td');td.className='row-actions';td.append(action('Editar',()=>openCourse(c),c.name),action('Eliminar',()=>askDelete('curso',c),c.name));tr.append(td);$('courses-body').append(tr);}if($('courses-body').contains(focused)||!focused?.isConnected)restoreFocus(focused,$('add-course'));}catch{$('courses-status').textContent='No se pudieron cargar los cursos. Volvé a abrir esta pestaña para reintentar.';}
 }
 function openCourse(c=null){courseReturnFocus=document.activeElement;courseEditing=c;$('course-name').removeAttribute('aria-invalid');$('course-dialog-title').textContent=c?'Editar curso':'Agregar curso';$('course-name').value=c?.name||'';$('course-dialog-error').textContent='';$('course-dialog').showModal();$('course-name').focus();}
 $('add-course').addEventListener('click',()=>openCourse());$('cancel-course').addEventListener('click',()=>$('course-dialog').close());
 $('course-form').addEventListener('submit',async event=>{event.preventDefault();const buttons=$('course-form').querySelectorAll('button');buttons.forEach(b=>b.disabled=true);try{const {response,data}=await request('/api/cursos'+(courseEditing?'/'+courseEditing.id:''),{method:courseEditing?'PUT':'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:$('course-name').value,version:courseEditing?.version})});if(!response.ok)throw Error(data.message);$('course-dialog').close();await refreshCatalog();$('live-status').textContent='Curso guardado correctamente.';restoreFocus(courseReturnFocus,$('add-course'));}catch(error){$('course-dialog-error').textContent=error.message||'No se pudo guardar.';$('course-name').setAttribute('aria-invalid','true');$('course-name').focus();}finally{buttons.forEach(b=>b.disabled=false);}});
-function askDelete(type,item){deleteReturnFocus=document.activeElement;deletion={type,item};$('delete-message').textContent=type==='curso'?`¿Eliminar “${item.name}” del catálogo? Las matrículas guardadas se conservan.`:`¿Eliminar la matrícula ${item.code} de ${item.lastName}, ${item.firstName}?`;$('delete-error').textContent='';$('delete-dialog').showModal();$('cancel-delete').focus();}
+function askDelete(type,item){deleteReturnFocus=document.activeElement;deletion={type,item};$('delete-message').textContent=type==='curso'?`¿Mover “${item.name}” a la papelera? Las matrículas guardadas se conservan. Podés recuperar el curso desde Papelera de cursos.`:`¿Mover la matrícula ${item.code} de ${item.lastName}, ${item.firstName} a la papelera? Podés recuperarla desde Papelera de matrículas.`;$('delete-error').textContent='';$('delete-dialog').showModal();$('cancel-delete').focus();}
 $('cancel-delete').addEventListener('click',()=>$('delete-dialog').close());
-$('confirm-delete').addEventListener('click',async()=>{const {type,item}=deletion;$('confirm-delete').disabled=true;$('cancel-delete').disabled=true;try{const {response,data}=await request('/api/'+(type==='curso'?'cursos':'matriculas')+'/'+item.id,{method:'DELETE',headers:{'Content-Type':'application/json'},body:JSON.stringify({version:item.version})});if(!response.ok)throw Error(data.message);$('delete-dialog').close();if(type==='curso')await refreshCatalog();else await refreshEnrollments();$('live-status').textContent=type==='curso'?'Curso eliminado del catálogo.':'Matrícula eliminada.';restoreFocus(deleteReturnFocus,$(type==='curso'?'add-course':'refresh-enrollments'));}catch(error){$('delete-error').textContent=error.message||'No se pudo eliminar.';}finally{$('confirm-delete').disabled=false;$('cancel-delete').disabled=false;}});
+$('confirm-delete').addEventListener('click',async()=>{const {type,item}=deletion;$('confirm-delete').disabled=true;$('cancel-delete').disabled=true;try{const {response,data}=await request('/api/'+(type==='curso'?'cursos':'matriculas')+'/'+item.id,{method:'DELETE',headers:{'Content-Type':'application/json'},body:JSON.stringify({version:item.version})});if(!response.ok)throw Error(data.message);$('delete-dialog').close();if(type==='curso')await refreshCatalog();else await refreshEnrollments();$('live-status').textContent=type==='curso'?'Curso enviado a la papelera. Podés recuperarlo desde Papelera de cursos.':'Matrícula enviada a la papelera. Podés recuperarla desde Papelera de matrículas.';restoreFocus(deleteReturnFocus,$(type==='curso'?'add-course':'refresh-enrollments'));}catch(error){$('delete-error').textContent=error.message||'No se pudo eliminar.';}finally{$('confirm-delete').disabled=false;$('cancel-delete').disabled=false;}});
 
 const identity=await request('/api/auth');if(identity.response.ok){$('session-name').textContent=identity.data.name;}
 $('logout-button').addEventListener('click',async()=>{if(dirty()){if(!confirm('Tenés cambios sin guardar. ¿Querés cerrar sesión y descartarlos?'))return;}$('logout-button').disabled=true;try{const response=await fetch('/api/auth',{method:'DELETE'});if(!response.ok)throw Error();registered=true;location.replace('/');}catch{$('logout-error').textContent='No se pudo cerrar sesión. Intentá nuevamente.';$('logout-button').disabled=false;}});
@@ -155,3 +158,37 @@ window.addEventListener('pageshow',event=>{if(event.persisted)location.reload();
 $('course-dialog').addEventListener('close',()=>restoreFocus(courseReturnFocus,$('add-course')));
 $('delete-dialog').addEventListener('close',()=>restoreFocus(deleteReturnFocus,$(deletion?.type==='curso'?'add-course':'refresh-enrollments')));
 $('course-name').addEventListener('input',()=>{$('course-name').removeAttribute('aria-invalid');$('course-dialog-error').textContent='';});
+
+$('cancel-edit').addEventListener('click',async()=>{if(dirty()&&!confirm('¿Querés descartar los cambios de esta matrícula? El registro guardado se conserva.'))return;reset();await showView('enrollments');$('live-status').textContent='Edición cancelada. La matrícula guardada se conservó.';});
+$('clear-filters').addEventListener('click',()=>{for(const id of ['search-enrollments','filter-course','filter-date'])$(id).value='';renderEnrollments();$('search-enrollments').focus();});
+
+const help={
+ entry:{title:'Registrar y editar matrículas',steps:['Elegí el curso y la fecha. Completá los datos del estudiante y su domicilio.','Seleccioná primero la provincia; las localidades se cargan según esa elección.','El resumen se actualiza mientras completás el formulario. Revisalo y elegí Registrar matrícula.','Para corregir una matrícula guardada, buscala en Matriculados y elegí Editar. Guardar cambios conserva su código. Cancelar edición conserva el registro anterior.']},
+ enrollments:{title:'Buscar y administrar matrículas',steps:['Buscá por nombre, apellido o código. Podés combinar la búsqueda con curso y fecha.','Limpiar filtros vuelve a mostrar todos los registros.','Editar permite corregir una matrícula; Eliminar la envía a Papelera de matrículas, donde podés recuperarla.']},
+ courses:{title:'Administrar cursos',steps:['Agregar curso crea una opción para nuevas matrículas. No se admiten nombres repetidos.','Editar cambia el nombre del curso para futuras inscripciones. Las matrículas anteriores conservan el nombre que tenían al guardarse.','Eliminar envía el curso a Papelera de cursos. Para recuperarlo no debe haber otro curso activo con el mismo nombre.']}
+};
+$('help-button').addEventListener('click',()=>{const topic=help[currentView];$('help-title').textContent=topic.title;const list=document.createElement('ol');for(const step of topic.steps)list.append(element('li',step));$('help-content').replaceChildren(list,element('p','Teclado: Tab y Mayús+Tab recorren los controles. Enter activa los botones y Escape cierra las ventanas.'));$('help-dialog').showModal();$('help-title').focus();});
+$('close-help').addEventListener('click',()=>$('help-dialog').close());
+$('help-dialog').addEventListener('close',()=>$('help-button').focus());
+
+let trashKind='matriculas',trashOpener=null,trashSequence=0,restoring=false;
+async function openTrash(kind,opener){trashKind=kind;trashOpener=opener;$('trash-title').textContent=kind==='cursos'?'Papelera de cursos':'Papelera de matrículas';$('trash-error').textContent='';$('trash-dialog').showModal();$('close-trash').focus();await loadTrash();}
+async function loadTrash(){
+ const sequence=++trashSequence,kind=trashKind;$('trash-status').textContent='Cargando papelera…';$('trash-list').replaceChildren();
+ try{const {response,data}=await request('/api/'+kind+'/papelera');if(sequence!==trashSequence)return;if(!response.ok||!Array.isArray(data))throw Error();$('trash-status').textContent=data.length?`${data.length} registro(s) para recuperar.`:'La papelera está vacía.';
+ for(const item of data){const name=kind==='cursos'?item.name:item.code+' · '+item.lastName+', '+item.firstName;const row=element('div','');row.className='trash-item';const info=element('div','');info.append(element('strong',name));if(kind==='matriculas')info.append(element('p',item.courseName+' · '+dateLabel(item.enrollmentDate)));const button=element('button','Recuperar');button.type='button';button.className='button secondary';button.setAttribute('aria-label','Recuperar '+name);button.addEventListener('click',()=>recoverItem(kind,item));row.append(info,button);$('trash-list').append(row);}
+ }catch{if(sequence===trashSequence)$('trash-status').textContent='No se pudo cargar la papelera. Usá Actualizar papelera para reintentar.';}
+}
+async function recoverItem(kind,item){
+ if(restoring)return;restoring=true;$('trash-error').textContent='';$('refresh-trash').disabled=true;for(const b of $('trash-list').querySelectorAll('button'))b.disabled=true;
+ try{const {response,data}=await request('/api/'+kind+'/'+encodeURIComponent(item.id)+'/restaurar',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({version:item.version})});if(!response.ok)throw Error(data.message||'No se pudo recuperar el registro.');
+ if(kind==='cursos'){await refreshCatalog();if(currentView==='entry')await loadCourses();}else await refreshEnrollments();
+ if($('trash-dialog').open&&trashKind===kind){await loadTrash();$('close-trash').focus();}$('live-status').textContent=kind==='cursos'?'Curso recuperado. Ya está disponible en el catálogo.':'Matrícula recuperada con sus datos originales.';
+ }catch(error){if($('trash-dialog').open)$('trash-error').textContent=error.message||'No se pudo recuperar el registro. Intentá nuevamente.';else $('live-status').textContent='No se pudo recuperar el registro. Volvé a abrir la papelera para reintentar.';}
+ finally{restoring=false;$('refresh-trash').disabled=false;for(const b of $('trash-list').querySelectorAll('button'))b.disabled=false;}
+}
+$('enrollments-trash').addEventListener('click',()=>openTrash('matriculas',$('enrollments-trash')));
+$('courses-trash').addEventListener('click',()=>openTrash('cursos',$('courses-trash')));
+$('refresh-trash').addEventListener('click',()=>{if(!restoring){$('trash-error').textContent='';loadTrash();}});
+$('close-trash').addEventListener('click',()=>$('trash-dialog').close());
+$('trash-dialog').addEventListener('close',()=>{trashSequence++;restoreFocus(trashOpener,$('help-button'));});

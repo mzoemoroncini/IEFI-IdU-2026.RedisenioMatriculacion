@@ -28,3 +28,10 @@ export async function updateEnrollment(db,id,body){
  if(!result[0].meta.changes)throw new SubmissionConflict('La matrícula cambió. Actualizá la lista antes de editar.');return findEnrollment(db,id);
 }
 export async function deleteEnrollment(db,id,version){const result=await db.batch([db.prepare('UPDATE enrollments SET deleted_at=?,version=version+1 WHERE id=? AND version=? AND deleted_at IS NULL').bind(new Date().toISOString(),id,version)]);if(!result[0].meta.changes)throw new SubmissionConflict('La matrícula cambió o fue eliminada. Actualizá la lista.');}
+
+export async function listDeletedEnrollments(db){return (await db.prepare('SELECT * FROM enrollments WHERE deleted_at IS NOT NULL ORDER BY deleted_at DESC,id DESC').all()).results.map(r=>({...record(r),deletedAt:r.deleted_at}));}
+export async function restoreEnrollment(db,id,version){
+ const result=await db.batch([db.prepare('UPDATE enrollments SET deleted_at=NULL,updated_at=?,version=version+1 WHERE id=? AND version=? AND deleted_at IS NOT NULL').bind(new Date().toISOString(),id,version)]);
+ if(!result[0].meta.changes)throw new SubmissionConflict('La matrícula cambió o ya fue recuperada. Actualizá la papelera.');
+ return findEnrollment(db,id);
+}
