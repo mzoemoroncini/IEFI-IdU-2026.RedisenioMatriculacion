@@ -7,7 +7,7 @@
   <meta name="description" content="Aula · Gestión de matrículas a cursos de computación.">
   <title>Nueva matrícula · Aula</title>
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="/styles.css">
+  <script src="/theme.js"></script><link rel="stylesheet" href="/styles.css">
   <script type="module" src="/app.js"></script>
 </head>
 <body>
@@ -16,7 +16,7 @@
     <div class="topbar-inner">
       <div class="brand" aria-label="Aula · Formación digital"><span class="brand-mark" aria-hidden="true">a</span><span class="brand-title">Aula <span>· Formación digital</span></span></div>
       <span class="module-label"><span aria-hidden="true" class="module-dot"></span>Gestión de matrículas</span>
-      <div class="session-controls"><span class="admin-label" id="session-name">Administración</span><button id="logout-button" class="text-button" type="button">Cerrar sesión</button></div>
+      <div class="session-controls"><div class="theme-picker" role="group" aria-label="Apariencia"><button type="button" data-theme-choice="light" aria-pressed="false"><span aria-hidden="true">☀</span> Claro</button><button type="button" data-theme-choice="dark" aria-pressed="false"><span aria-hidden="true">☾</span> Oscuro</button></div><span class="admin-label" id="session-name">Administración</span><button id="logout-button" class="text-button" type="button">Cerrar sesión</button></div>
     </div>
   </header>
   <main id="main" class="page" tabindex="-1">
