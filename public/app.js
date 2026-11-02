@@ -1,3 +1,4 @@
+import { restoreFocus } from './focus.js';
 import {FIELDS,clean,normalize,validate,validDate,createRequestId} from './rules.js';
 const $=id=>document.getElementById(id);
 const form=$('enrollment-form');
@@ -73,6 +74,7 @@ form.addEventListener('submit',async event=>{
     if(!response.ok){
       if(saved.errors){for(const name of FIELDS)if(saved.errors[name])setError(name,Array.isArray(saved.errors[name])?saved.errors[name][0]:saved.errors[name]);}
       const first=FIELDS.find(name=>saved.errors?.[name]);
+      busy(false);
       errorBanner(response.status===400?'Revisá los campos señalados':'No se pudo confirmar el registro',saved.message||'Tus datos se conservaron. Intentá nuevamente.');
       if(first)fields[first].focus();
       return;
@@ -110,40 +112,46 @@ async function loadLocalities(selected=''){
 }
 fields.provinceId.addEventListener('change',()=>loadLocalities());
 $('retry-location').addEventListener('click',async()=>{await loadProvinces();await loadLocalities();});
-let enrollments=[];let catalog=[];let courseEditing=null;let deletion=null;
+let enrollments=[];let catalog=[];let courseEditing=null;let deletion=null;let courseReturnFocus=null;let deleteReturnFocus=null;
 function element(tag,text){const e=document.createElement(tag);e.textContent=text;return e;}
-function action(text,fn){const b=element('button',text);b.type='button';b.className='text-button';b.addEventListener('click',fn);return b;}
+function action(text,fn,subject){const b=element('button',text);b.setAttribute('aria-label',text+' '+subject);b.type='button';b.className='text-button';b.addEventListener('click',fn);return b;}
 async function showView(view){
  if(view==='entry'&&registered)reset();
  for(const [key,id] of Object.entries({entry:'entry-content',enrollments:'enrollments-panel',courses:'courses-panel'}))$(id).hidden=key!==view;
  $('success-panel').hidden=true;for(const b of document.querySelectorAll('[data-view]')){b.classList.toggle('active',b.dataset.view===view);if(b.dataset.view===view)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current');}
  history.replaceState(null,'',location.pathname);document.title=(view==='entry'?'Nueva matrícula':view==='courses'?'Cursos':'Matriculados')+' · Aula';
+ $(view==='entry'?'form-title':view==='courses'?'courses-heading':'enrollments-heading').focus();
  if(view==='enrollments')await refreshEnrollments();if(view==='courses')await refreshCatalog();if(view==='entry')await loadCourses();
 }
 for(const b of document.querySelectorAll('[data-view]'))b.addEventListener('click',()=>showView(b.dataset.view));
 async function refreshEnrollments(){
- $('enrollments-status').textContent='Cargando matrículas…';try{const {response,data}=await request('/api/matriculas');if(!response.ok)throw Error();enrollments=data;const selected=$('filter-course').value;const options=new Map(data.map(e=>[e.courseId,e.courseName]));$('filter-course').replaceChildren(new Option('Todos los cursos',''));for(const [id,name]of options)$('filter-course').add(new Option(name,id));$('filter-course').value=selected;renderEnrollments();}catch{$('enrollments-status').textContent='No se pudo cargar la lista. Usá Actualizar lista para reintentar.';$('enrollments-body').replaceChildren();}
+ const focused=document.activeElement;$('enrollments-status').textContent='Cargando matrículas…';try{const {response,data}=await request('/api/matriculas');if(!response.ok)throw Error();enrollments=data;const selected=$('filter-course').value;const options=new Map(data.map(e=>[e.courseId,e.courseName]));$('filter-course').replaceChildren(new Option('Todos los cursos',''));for(const [id,name]of options)$('filter-course').add(new Option(name,id));$('filter-course').value=selected;renderEnrollments();if(!focused?.isConnected)restoreFocus(focused,$('refresh-enrollments'));}catch{$('enrollments-status').textContent='No se pudo cargar la lista. Usá Actualizar lista para reintentar.';$('enrollments-body').replaceChildren();}
 }
 const searchKey=s=>s.normalize('NFD').replace(/\p{M}/gu,'').toLowerCase();
 function renderEnrollments(){
  const query=searchKey($('search-enrollments').value.trim());const rows=enrollments.filter(e=>(!query||searchKey(e.lastName+' '+e.firstName+' '+e.code).includes(query))&&(!$('filter-course').value||e.courseId===$('filter-course').value)&&(!$('filter-date').value||e.enrollmentDate===$('filter-date').value));
  $('enrollments-body').replaceChildren();$('enrollments-status').textContent=rows.length?`${rows.length} matrícula(s)`:'No hay matrículas para mostrar.';
- for(const e of rows){const tr=document.createElement('tr');for(const value of [e.code+' · '+dateLabel(e.enrollmentDate),e.lastName+', '+e.firstName,e.courseName,[e.locality,e.provinceName||'Provincia no informada'].join(', ')])tr.append(element('td',value));const td=document.createElement('td');td.className='row-actions';td.append(action('Editar',()=>editEnrollment(e)),action('Eliminar',()=>askDelete('matricula',e)));tr.append(td);$('enrollments-body').append(tr);}
+ for(const e of rows){const tr=document.createElement('tr');for(const value of [e.code+' · '+dateLabel(e.enrollmentDate),e.lastName+', '+e.firstName,e.courseName,[e.locality,e.provinceName||'Provincia no informada'].join(', ')])tr.append(element('td',value));const td=document.createElement('td');td.className='row-actions';td.append(action('Editar',()=>editEnrollment(e),e.code+' de '+e.lastName+', '+e.firstName),action('Eliminar',()=>askDelete('matricula',e),e.code+' de '+e.lastName+', '+e.firstName));tr.append(td);$('enrollments-body').append(tr);}
 }
 for(const id of ['search-enrollments','filter-course','filter-date'])$(id).addEventListener('input',renderEnrollments);
 $('refresh-enrollments').addEventListener('click',refreshEnrollments);
 async function editEnrollment(e){reset();editing=e;await showView('entry');$('form-title').textContent='Editar '+e.code;for(const name of FIELDS)if(name!=='locality')fields[name].value=e[name]||'';await loadLocalities(e.localityId);baseline=fingerprint();busy(false);preview();$('form-title').scrollIntoView({block:'start'});fields.lastName.focus();}
 async function refreshCatalog(){
- $('courses-status').textContent='Cargando cursos…';try{const {response,data}=await request('/api/cursos');if(!response.ok)throw Error();catalog=data;$('courses-body').replaceChildren();$('courses-status').textContent=data.length?`${data.length} curso(s) disponible(s)`:'Todavía no hay cursos. Agregá el primero.';for(const c of data){const tr=document.createElement('tr');tr.append(element('td',c.name));const td=document.createElement('td');td.className='row-actions';td.append(action('Editar',()=>openCourse(c)),action('Eliminar',()=>askDelete('curso',c)));tr.append(td);$('courses-body').append(tr);}}catch{$('courses-status').textContent='No se pudieron cargar los cursos. Volvé a abrir esta pestaña para reintentar.';}
+ const focused=document.activeElement;$('courses-status').textContent='Cargando cursos…';try{const {response,data}=await request('/api/cursos');if(!response.ok)throw Error();catalog=data;$('courses-body').replaceChildren();$('courses-status').textContent=data.length?`${data.length} curso(s) disponible(s)`:'Todavía no hay cursos. Agregá el primero.';for(const c of data){const tr=document.createElement('tr');const nameCell=element('th',c.name);nameCell.scope='row';tr.append(nameCell);const td=document.createElement('td');td.className='row-actions';td.append(action('Editar',()=>openCourse(c),c.name),action('Eliminar',()=>askDelete('curso',c),c.name));tr.append(td);$('courses-body').append(tr);}if($('courses-body').contains(focused)||!focused?.isConnected)restoreFocus(focused,$('add-course'));}catch{$('courses-status').textContent='No se pudieron cargar los cursos. Volvé a abrir esta pestaña para reintentar.';}
 }
-function openCourse(c=null){courseEditing=c;$('course-dialog-title').textContent=c?'Editar curso':'Agregar curso';$('course-name').value=c?.name||'';$('course-dialog-error').textContent='';$('course-dialog').showModal();$('course-name').focus();}
+function openCourse(c=null){courseReturnFocus=document.activeElement;courseEditing=c;$('course-name').removeAttribute('aria-invalid');$('course-dialog-title').textContent=c?'Editar curso':'Agregar curso';$('course-name').value=c?.name||'';$('course-dialog-error').textContent='';$('course-dialog').showModal();$('course-name').focus();}
 $('add-course').addEventListener('click',()=>openCourse());$('cancel-course').addEventListener('click',()=>$('course-dialog').close());
-$('course-form').addEventListener('submit',async event=>{event.preventDefault();const buttons=$('course-form').querySelectorAll('button');buttons.forEach(b=>b.disabled=true);try{const {response,data}=await request('/api/cursos'+(courseEditing?'/'+courseEditing.id:''),{method:courseEditing?'PUT':'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:$('course-name').value,version:courseEditing?.version})});if(!response.ok)throw Error(data.message);$('course-dialog').close();await refreshCatalog();}catch(error){$('course-dialog-error').textContent=error.message||'No se pudo guardar.';}finally{buttons.forEach(b=>b.disabled=false);}});
-function askDelete(type,item){deletion={type,item};$('delete-message').textContent=type==='curso'?`¿Eliminar “${item.name}” del catálogo? Las matrículas guardadas se conservan.`:`¿Eliminar la matrícula ${item.code} de ${item.lastName}, ${item.firstName}?`;$('delete-error').textContent='';$('delete-dialog').showModal();$('cancel-delete').focus();}
+$('course-form').addEventListener('submit',async event=>{event.preventDefault();const buttons=$('course-form').querySelectorAll('button');buttons.forEach(b=>b.disabled=true);try{const {response,data}=await request('/api/cursos'+(courseEditing?'/'+courseEditing.id:''),{method:courseEditing?'PUT':'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:$('course-name').value,version:courseEditing?.version})});if(!response.ok)throw Error(data.message);$('course-dialog').close();await refreshCatalog();$('live-status').textContent='Curso guardado correctamente.';restoreFocus(courseReturnFocus,$('add-course'));}catch(error){$('course-dialog-error').textContent=error.message||'No se pudo guardar.';$('course-name').setAttribute('aria-invalid','true');$('course-name').focus();}finally{buttons.forEach(b=>b.disabled=false);}});
+function askDelete(type,item){deleteReturnFocus=document.activeElement;deletion={type,item};$('delete-message').textContent=type==='curso'?`¿Eliminar “${item.name}” del catálogo? Las matrículas guardadas se conservan.`:`¿Eliminar la matrícula ${item.code} de ${item.lastName}, ${item.firstName}?`;$('delete-error').textContent='';$('delete-dialog').showModal();$('cancel-delete').focus();}
 $('cancel-delete').addEventListener('click',()=>$('delete-dialog').close());
-$('confirm-delete').addEventListener('click',async()=>{const {type,item}=deletion;$('confirm-delete').disabled=true;$('cancel-delete').disabled=true;try{const {response,data}=await request('/api/'+(type==='curso'?'cursos':'matriculas')+'/'+item.id,{method:'DELETE',headers:{'Content-Type':'application/json'},body:JSON.stringify({version:item.version})});if(!response.ok)throw Error(data.message);$('delete-dialog').close();if(type==='curso')await refreshCatalog();else await refreshEnrollments();}catch(error){$('delete-error').textContent=error.message||'No se pudo eliminar.';}finally{$('confirm-delete').disabled=false;$('cancel-delete').disabled=false;}});
+$('confirm-delete').addEventListener('click',async()=>{const {type,item}=deletion;$('confirm-delete').disabled=true;$('cancel-delete').disabled=true;try{const {response,data}=await request('/api/'+(type==='curso'?'cursos':'matriculas')+'/'+item.id,{method:'DELETE',headers:{'Content-Type':'application/json'},body:JSON.stringify({version:item.version})});if(!response.ok)throw Error(data.message);$('delete-dialog').close();if(type==='curso')await refreshCatalog();else await refreshEnrollments();$('live-status').textContent=type==='curso'?'Curso eliminado del catálogo.':'Matrícula eliminada.';restoreFocus(deleteReturnFocus,$(type==='curso'?'add-course':'refresh-enrollments'));}catch(error){$('delete-error').textContent=error.message||'No se pudo eliminar.';}finally{$('confirm-delete').disabled=false;$('cancel-delete').disabled=false;}});
 
 const identity=await request('/api/auth');if(identity.response.ok){$('session-name').textContent=identity.data.name;}
 $('logout-button').addEventListener('click',async()=>{if(dirty()){if(!confirm('Tenés cambios sin guardar. ¿Querés cerrar sesión y descartarlos?'))return;}$('logout-button').disabled=true;try{const response=await fetch('/api/auth',{method:'DELETE'});if(!response.ok)throw Error();registered=true;location.replace('/');}catch{$('logout-error').textContent='No se pudo cerrar sesión. Intentá nuevamente.';$('logout-button').disabled=false;}});
 
 window.addEventListener('pageshow',event=>{if(event.persisted)location.reload();});
+
+// Escape and Cancel return to the invoking control; saved/deleted rows may have been replaced.
+$('course-dialog').addEventListener('close',()=>restoreFocus(courseReturnFocus,$('add-course')));
+$('delete-dialog').addEventListener('close',()=>restoreFocus(deleteReturnFocus,$(deletion?.type==='curso'?'add-course':'refresh-enrollments')));
+$('course-name').addEventListener('input',()=>{$('course-name').removeAttribute('aria-invalid');$('course-dialog-error').textContent='';});
