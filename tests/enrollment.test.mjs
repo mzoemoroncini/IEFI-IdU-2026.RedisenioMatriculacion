@@ -14,7 +14,7 @@ function adapter(sqlite){
  };
 }
 function database(path=':memory:'){const sqlite=new DatabaseSync(path);for(const file of readdirSync(new URL('../drizzle/',import.meta.url)).filter(name=>name.endsWith('.sql')).sort())sqlite.exec(readFileSync(new URL('../drizzle/'+file,import.meta.url),'utf8'));return sqlite;}
-test('Los cursos actuales reemplazan las opciones antiguas',()=>assert.equal(COURSES.length,4));
+test('La oferta actual conserva los cursos originales y cubre nuevas áreas sin duplicados',()=>{assert.ok(COURSES.length>=24);assert.equal(new Set(COURSES.map(c=>c.id)).size,COURSES.length);for(const id of ['web','python','excel','ux-ui','ia-generativa','cyber','cloud','testing'])assert.ok(COURSES.some(c=>c.id===id));});
 test('Acepta nombres con tildes, apóstrofes y guiones',()=>assert.deepEqual(validate(data()),{}));
 test('La fecha anterior no se rechaza',()=>assert.deepEqual(validate({...data(),enrollmentDate:'2020-01-02'}),{}));
 test('Valida fechas reales y años bisiestos',()=>{assert.equal(validDate('2024-02-29'),true);for(const value of ['2025-02-29','2026-13-01','2026-04-31','01/11/2026','',null])assert.equal(validDate(value),false);});

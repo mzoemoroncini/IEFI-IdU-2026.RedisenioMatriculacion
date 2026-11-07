@@ -1,0 +1,12 @@
+// PDF local, sin enviar datos del estudiante a servicios externos.
+const latin=s=>String(s??'').replace(/[–—]/g,'-').replace(/…/g,'...').replace(/[^\x20-\xFF]/g,' ');
+const escape=s=>latin(s).replace(/([\\()])/g,'\\$1');
+export function buildReceiptPdf(title,rows){
+ const lines=[title,'Aula - Formación digital','',...rows.flatMap(([k,v])=>{const text=k+': '+String(v??'Sin informar');const out=[];let rest=text;while(rest.length>86){let cut=rest.lastIndexOf(' ',86);if(cut<20)cut=86;out.push(rest.slice(0,cut));rest=rest.slice(cut).trimStart()}out.push(rest);return out}), '', 'Comprobante emitido por Aula.'];
+ const chunks=[];for(let i=0;i<lines.length;i+=42)chunks.push(lines.slice(i,i+42));
+ const objects=['','<< /Type /Catalog /Pages 2 0 R >>','', '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>'];
+ const kids=[];for(const chunk of chunks){const page=objects.length,content=page+1;kids.push(page+' 0 R');objects.push(`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R >> >> /Contents ${content} 0 R >>`);const stream='BT /F1 11 Tf 48 785 Td 17 TL '+chunk.map(line=>'('+escape(line)+') Tj T*').join('\n')+' ET';objects.push(`<< /Length ${stream.length} >>\nstream\n${stream}\nendstream`)}
+ objects[2]=`<< /Type /Pages /Kids [${kids.join(' ')}] /Count ${kids.length} >>`;let pdf='%PDF-1.4\n',offsets=[0];for(let i=1;i<objects.length;i++){offsets.push(pdf.length);pdf+=`${i} 0 obj\n${objects[i]}\nendobj\n`}const xref=pdf.length;pdf+=`xref\n0 ${objects.length}\n0000000000 65535 f \n`+offsets.slice(1).map(n=>String(n).padStart(10,'0')+' 00000 n \n').join('')+`trailer\n<< /Size ${objects.length} /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF`;return Uint8Array.from(pdf,c=>c.charCodeAt(0));
+}
+export function downloadReceipt(title,rows,filename){const blob=new Blob([buildReceiptPdf(title,rows)],{type:'application/pdf'}),url=URL.createObjectURL(blob),link=document.createElement('a');link.href=url;link.download=filename.replace(/[^a-zA-Z0-9_.-]/g,'-')+'.pdf';document.body.append(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),10000)}
+export const enrollmentRows=e=>[['Matrícula',e.code],['Estudiante',e.lastName+', '+e.firstName],['Curso',e.courseName],['Fecha de matrícula',new Date(e.enrollmentDate+'T12:00:00Z').toLocaleDateString('es-AR',{day:'numeric',month:'long',year:'numeric'})],['Provincia',e.provinceName||'Sin informar'],['Localidad',e.locality],['Domicilio',e.address]];

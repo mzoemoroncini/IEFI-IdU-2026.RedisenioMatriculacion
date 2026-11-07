@@ -3,6 +3,8 @@ import { sqliteTable, integer, text } from "drizzle-orm/sqlite-core";
 export const enrollments = sqliteTable("enrollments", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   requestId: text("request_id").notNull().unique(),
+  feeCents: integer("fee_cents"),
+  paymentWriteToken: text("payment_write_token"),
   courseId: text("course_id").notNull(),
   courseName: text("course_name").notNull(),
   enrollmentDate: text("enrollment_date").notNull(),
@@ -26,6 +28,12 @@ export const courses = sqliteTable("courses", {
   name: text("name").notNull(),
   nameKey: text("name_key").notNull().unique(),
   position: integer("position").notNull().default(0),
+  feeCents: integer("fee_cents"),
+  description: text("description"),
+  duration: text("duration"),
+  area: text("area"),
+  level: text("level"),
+  image: text("image"),
   createdAt: text("created_at").notNull(),
   deletedAt: text("deleted_at"),
   version: integer("version").notNull().default(1),
@@ -41,6 +49,8 @@ export const authLimits=sqliteTable('auth_limits',{
 export const demoEnrollments = sqliteTable("demo_enrollments", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   requestId: text("request_id").notNull().unique(),
+  feeCents: integer("fee_cents"),
+  paymentWriteToken: text("payment_write_token"),
   courseId: text("course_id").notNull(),
   courseName: text("course_name").notNull(),
   enrollmentDate: text("enrollment_date").notNull(),
@@ -64,8 +74,29 @@ export const demoCourses = sqliteTable("demo_courses", {
   name: text("name").notNull(),
   nameKey: text("name_key").notNull().unique(),
   position: integer("position").notNull().default(0),
+  feeCents: integer("fee_cents"),
+  description: text("description"),
+  duration: text("duration"),
+  area: text("area"),
+  level: text("level"),
+  image: text("image"),
   createdAt: text("created_at").notNull(),
   deletedAt: text("deleted_at"),
   version: integer("version").notNull().default(1),
 });
 
+
+export const payments = sqliteTable('payments', {
+ id:text('id').primaryKey(),requestId:text('request_id').notNull().unique(),
+ enrollmentId:integer('enrollment_id').notNull().references(()=>enrollments.id),
+ amountCents:integer('amount_cents').notNull(),method:text('method').notNull(),paidDate:text('paid_date').notNull(),
+ status:text('status').notNull(),createdAt:text('created_at').notNull(),cancelledAt:text('cancelled_at'),cancelReason:text('cancel_reason'),
+ studentName:text('student_name').notNull(),courseName:text('course_name').notNull(),enrollmentCode:text('enrollment_code').notNull(),note:text('note').notNull(),
+});
+export const demoPayments = sqliteTable('demo_payments', {
+ id:text('id').primaryKey(),requestId:text('request_id').notNull().unique(),
+ enrollmentId:integer('enrollment_id').notNull().references(()=>demoEnrollments.id),
+ amountCents:integer('amount_cents').notNull(),method:text('method').notNull(),paidDate:text('paid_date').notNull(),
+ status:text('status').notNull(),createdAt:text('created_at').notNull(),cancelledAt:text('cancelled_at'),cancelReason:text('cancel_reason'),
+ studentName:text('student_name').notNull(),courseName:text('course_name').notNull(),enrollmentCode:text('enrollment_code').notNull(),note:text('note').notNull(),
+});

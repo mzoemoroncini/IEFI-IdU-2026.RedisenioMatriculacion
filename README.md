@@ -1,90 +1,53 @@
 # Aula · Gestión de matrículas
 
-Interfaz web responsive para la IEFI de Interfaz de Usuario. El formulario rediseña la ficha original de matriculación a cursos de computación y conserva curso, fecha, apellidos, nombres, sexo, dirección y localidad (adaptación de distrito).
+Proyecto web de la IEFI de Interfaz de Usuario · 2026.
 
-## Uso
+**Abrir la aplicación:** https://aula-matriculas-zoe.glassy-mango-3069.chatgpt.site/
 
-La aplicación se publica con una URL: no requiere ejecutar un programa en la computadora del visitante. El acceso público muestra el inicio de sesión propio; las páginas y API de administración exigen una sesión válida.
+El sitio muestra los datos de acceso para la entrega académica. La contraseña de administración y los secretos del servidor no forman parte de este repositorio.
 
-1. Elegir un curso y la fecha de matrícula. Se permiten fechas anteriores.
-2. Completar los datos del estudiante y su domicilio.
-3. Revisar el resumen, que se actualiza automáticamente.
-4. Presionar **Registrar matrícula**.
-5. La confirmación muestra un número `MAT-000001` únicamente después de guardarse en la base de datos.
-6. **Nueva matrícula** inicia otro formulario. El enlace de confirmación permite volver a consultar el registro después de recargar la página.
+## Funciones
 
-La provincia determina las localidades disponibles. Cambiarla limpia la localidad anterior. El servidor valida la correspondencia y guarda identificadores y nombres. El catálogo de 24 jurisdicciones y sus localidades está incluido desde GeoRef (Argentina), consultado el 1/11/2026, sin depender de un servicio externo durante el uso. Las matrículas antiguas sin provincia conservan sus datos; al editarlas se completa la ubicación. Se admiten nombres con tildes, apóstrofes y guiones. Limpiar pide confirmación y no borra las matrículas ya guardadas. Los errores conservan los datos ingresados. Durante el registro se bloquean envíos repetidos; reintentar el mismo envío utiliza un identificador único y no crea otra matrícula.
-
-## Acceso y entrega en Classroom
-
-El enlace abre un formulario de correo y contraseña sin exigir una cuenta de ChatGPT. No hay registro público de usuarios.
-
-- La pantalla muestra la cuenta pública de demostración `profe@aula.local` y su contraseña, con un botón para completar los datos. Esta exposición es intencional para la entrega académica.
-- La cuenta `zoe@aula.local` administra los datos originales; su contraseña no se publica en el código ni en la pantalla.
-- Las sesiones duran 8 horas. Cerrar sesión invalida el token en el servidor. Las credenciales configuradas como secretos incluyen hashes PBKDF2-SHA256 con sal individual y pepper del servidor; las contraseñas generadas tienen alta entropía.
-- Cookies HttpOnly, Secure en HTTPS y SameSite=Strict. Las operaciones de escritura comprueban el origen. Los intentos de acceso repetidos se limitan por cuenta e IP.
-- La cuenta docente utiliza tablas separadas `demo_enrollments` y `demo_courses`, con 3 matrículas ficticias iniciales. Puede probar el CRUD completo sin acceder a las tablas de administración. Es un espacio de prueba compartido entre quienes usen esa cuenta; no cargar datos personales reales.
-- La inicialización de ejemplos no restaura registros eliminados ni sobrescribe ediciones.
-
-### Configuración para desarrollar
-
-`node scripts/provision-access.mjs` genera dos credenciales nuevas **solo para el entorno local**, escribe hashes y pepper en `.dev.vars` (ignorado por Git) y entrega las contraseñas por stdout. Mantener ese resultado privado. Actualizar también el bloque de demostración en `assets/login.html` si se cambia su contraseña local. Para publicar, configurar `AULA_ACCOUNTS_JSON` y `AULA_PASSWORD_PEPPER` como secretos del servidor; nunca en archivos versionados. Reiniciar la vista local tras configurar variables.
-
-## Administración
-
-- **Matriculados**: listado, búsqueda por estudiante/código, filtros por curso y fecha, edición y eliminación con confirmación.
-- **Cursos**: agregar, editar y eliminar. Los cambios del catálogo no modifican el nombre guardado en matrículas anteriores. Una matrícula puede mantener su curso eliminado al editar otros datos.
-- Las eliminaciones son lógicas. Los registros dejan de aparecer en la interfaz. La versión de cada registro evita sobrescribir cambios simultáneos.
-
-Sitio: https://aula-matriculas-zoe.glassy-mango-3069.chatgpt.site
+- Inscripción guiada en cuatro pasos: estudiante y domicilio, curso, pago y confirmación.
+- Provincia y localidad relacionadas, validaciones por campo y resumen en vivo.
+- Matriculados con búsqueda, filtros, edición y papelera recuperable.
+- Ficha del estudiante con matrícula, curso, arancel, saldo e historial de pagos.
+- Catálogo administrable de cursos de informática con imágenes, área, nivel, duración y arancel.
+- Pagos parciales o totales, saldo actualizado y anulación de movimientos con motivo.
+- Comprobantes de matrícula y pago y ficha descargables en PDF; impresión de pagos.
+- QR simbólico, efectivo y transferencia como registros manuales, sin procesar dinero real.
+- Estadísticas de cursos, matrículas y pagos con gráficos y tablas.
+- Temas claro y oscuro, búsquedas, navegación por teclado y diseño adaptable.
 
 ## Tecnología y datos
 
-- Interfaz en HTML, CSS y JavaScript, basada en el diseño de Stitch.
-- Rutas de servidor con Vinext, compatibles con Next.js y Cloudflare Workers.
-- Base de datos **Cloudflare D1 (SQLite alojado)** para las matrículas.
-- Validación compartida entre navegador y servidor.
-- Consultas parametrizadas y restricción de unicidad del identificador de envío.
-- Las migraciones de `drizzle/` crean la estructura; no incluyen datos de personas.
+HTML, CSS y JavaScript para la interfaz; rutas de servidor Vinext/TypeScript sobre Cloudflare Workers y base Cloudflare D1 (SQLite). El servidor valida los datos, utiliza consultas parametrizadas y evita duplicados y sobrescrituras mediante identificadores de operación y versiones.
 
-La petición de una URL alojada determina esta arquitectura web. Esta interfaz es independiente de la aplicación WPF de restaurante. La base alojada tampoco depende de la base local de Mesa.
+La cuenta docente usa tablas separadas de administración. Los datos de ejemplo son académicos; no cargar información personal real en el acceso compartido. El repositorio incluye código, catálogo y migraciones, sin exportar los registros del sitio ni sus sesiones.
 
-## Estructura
+## Desarrollo y acceso
 
-- `assets/index.html`: pantalla y controles accesibles.
-- `public/styles.css`: diseño de computadora y adaptación a tablet/celular.
-- `public/app.js`: resumen en vivo, validaciones, confirmación de limpieza y registro real.
-- `public/rules.js`: cursos y validaciones compartidas.
-- `app/api/`: consulta de cursos, alta de matrícula y consulta por identificador.
-- `db/enrollments.mjs`: persistencia y prevención de duplicados al reintentar.
-- `db/schema.ts`, `drizzle/`: esquema y migraciones de D1.
-- `tests/enrollment.test.mjs`: pruebas con SQLite real mediante `node:sqlite`.
-
-## Desarrollo local
-
-Requiere Node.js 24 y pnpm 11.25.0:
+Se requiere Node.js 24 y pnpm según `packageManager` en `package.json`.
 
 ```sh
-corepack enable
-pnpm install --frozen-lockfile
-pnpm test
-pnpm build
-node --import ./scripts/sites-env.mjs ./node_modules/wrangler/bin/wrangler.js d1 execute DB --local --config dist/server/wrangler.json --persist-to .wrangler/state --file drizzle/0000_confused_storm.sql
-node --import ./scripts/sites-env.mjs ./node_modules/wrangler/bin/wrangler.js d1 execute DB --local --config dist/server/wrangler.json --persist-to .wrangler/state --file drizzle/0001_cute_venus.sql
-node --import ./scripts/sites-env.mjs ./node_modules/wrangler/bin/wrangler.js d1 execute DB --local --config dist/server/wrangler.json --persist-to .wrangler/state --file drizzle/0002_fixed_kylun.sql
-pnpm dev
+corepack pnpm install
 ```
 
-La base local y la alojada son independientes. Aplicar una migración local solamente si está pendiente. Los scripts conservan la integración de Sites para compilación, base y publicación. No incluir `.wrangler/`, variables locales ni credenciales en Git.
+Configurar el binding D1 `DB` y aplicar, en orden, las migraciones de `drizzle/` sobre la base local con Wrangler. El script `node scripts/provision-access.mjs` genera credenciales locales nuevas y escribe hashes y pepper en `.dev.vars` (ignorado por Git); su salida contiene las contraseñas y debe mantenerse privada. Si se cambian las credenciales locales, actualizar el acceso de prueba de `assets/login.html` para ese entorno.
+
+El servidor requiere `AULA_ACCOUNTS_JSON` y `AULA_PASSWORD_PEPPER`. En producción se configuran como secretos, nunca en archivos versionados. Después de configurarlos, iniciar `corepack pnpm dev`. La configuración original de alojamiento está en `.openai/hosting.json` y los scripts de ejecución/publicación en `scripts/`.
+
+Para compilar: `corepack pnpm build`. Publicar en un entorno compatible con Workers/D1. GitHub almacena el código; GitHub Pages no ejecuta esta aplicación con su base de datos y su autenticación.
 
 ## Verificación
 
-- 32 pruebas de validación y persistencia: fechas, nombres, campos obligatorios, consultas, errores de escritura, duplicados por reintento y reapertura de la base.
-- Circuito verificado en navegador: errores iniciales, resumen automático, Conservar/Sí limpiar, alta y recuperación de la matrícula después de recargar.
-- Distribución revisada en computadora y en anchos de 390 y 320 píxeles, sin desbordamiento horizontal.
+```sh
+node --test tests/*.test.mjs
+node --check public/app.js
+node --check public/payments.js
+node --check public/student-profile.js
+```
 
-## Alcance académico
+72 pruebas automatizadas correctas en la última revisión. Se probaron desde la interfaz el inicio de sesión, la inscripción, la localidad según provincia, los pagos parciales y completos, la anulación y la edición sin perder pagos. Estas pruebas usaron una base local separada. La generación del PDF se validó; la descarga efectiva no pudo confirmarse con el navegador de pruebas.
 
-La interfaz está enfocada en matricular. Incluye la gestión de matrículas y del catálogo de cursos. No incluye pagos, calificaciones, cupos ni gestión pública de usuarios. Los estados de carga, error y éxito forman parte del circuito real; no hay un simulador dentro de la pantalla del producto.
-
-La verificación de acceso cubre contraseñas incorrectas, expiración, cierre de sesión, revocación por cambio de configuración, límites de intentos, origen de solicitudes y aislamiento de demostración.
+Más detalle sobre aranceles y catálogo: [PAYMENTS.md](PAYMENTS.md).

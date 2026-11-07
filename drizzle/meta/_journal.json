@@ -22,6 +22,20 @@
       "when": 1793512380388,
       "tag": "0002_fixed_kylun",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1793916207446,
+      "tag": "0003_skinny_magdalene",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1793923649453,
+      "tag": "0004_minor_kinsey_walden",
+      "breakpoints": true
     }
   ]
 }

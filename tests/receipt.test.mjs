@@ -1,0 +1,4 @@
+import {test} from 'node:test';
+import assert from 'node:assert/strict';
+import {buildReceiptPdf} from '../public/receipt-download.js';
+test('PDF conserva tildes, escapa contenido y tiene referencias válidas en varias páginas',()=>{const bytes=buildReceiptPdf('Matrícula de María',Array.from({length:90},(_,i)=>['Dato '+i,'Pérez (prueba) \\ valor'])),pdf=Buffer.from(bytes).toString('latin1');assert.ok(pdf.startsWith('%PDF-1.4'));assert.match(pdf,/Matrícula de María/);assert.ok(pdf.includes('Pérez \\(prueba\\) \\\\ valor'));assert.match(pdf,/\/Count 3/);const offset=Number(pdf.match(/startxref\n(\d+)/)[1]);assert.equal(pdf.slice(offset,offset+4),'xref');const entries=pdf.slice(offset).split('\n');for(let i=3;i<entries.length&&/^\d{10} /.test(entries[i]);i++){const position=Number(entries[i].slice(0,10));assert.ok(/^\d+ 0 obj/.test(pdf.slice(position)))}});

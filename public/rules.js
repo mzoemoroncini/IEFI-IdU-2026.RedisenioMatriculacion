@@ -1,9 +1,5 @@
-export const COURSES = Object.freeze([
-  {id:'web',name:'Desarrollo web'},
-  {id:'python',name:'Programación con Python'},
-  {id:'excel',name:'Excel y análisis de datos'},
-  {id:'ux-ui',name:'Diseño UX/UI'}
-]);
+import {OFFERINGS} from './catalog.js';
+export const COURSES=Object.freeze(OFFERINGS.map(([id,name])=>({id,name})));
 export const FIELDS = ['courseId','enrollmentDate','lastName','firstName','sex','address','provinceId','locality'];
 export const clean = value => typeof value === 'string' ? value.trim().replace(/\s+/gu,' ') : '';
 export function validDate(value) {

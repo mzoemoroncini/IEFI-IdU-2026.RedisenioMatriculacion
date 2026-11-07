@@ -1,0 +1,33 @@
+// Oferta de formación editable. El arancel corresponde a la inscripción, no al curso completo.
+export const OFFERINGS=[
+ ['web','Desarrollo web','Programación','Inicial','HTML, CSS, accesibilidad y sitios adaptables.','12 semanas',2500000],
+ ['python','Programación con Python','Programación','Inicial','Fundamentos, funciones y proyectos prácticos.','12 semanas',2500000],
+ ['excel','Excel y análisis de datos','Herramientas digitales','Inicial','Fórmulas, tablas dinámicas e informes de trabajo.','8 semanas',1800000],
+ ['ux-ui','Diseño UX/UI','Diseño y producto','Inicial','Investigación, prototipos y diseño accesible en Figma.','10 semanas',2500000],
+ ['javascript','JavaScript y TypeScript','Programación','Intermedio','Aplicaciones interactivas, tipado y consumo de APIs.','12 semanas',2800000],
+ ['react','React y aplicaciones web','Programación','Intermedio','Componentes, estado, formularios y navegación.','12 semanas',3000000],
+ ['dotnet','C# y desarrollo con .NET','Programación','Inicial','Programación orientada a objetos y APIs con C#.','16 semanas',3000000],
+ ['node','Backend con Node.js','Programación','Intermedio','Servicios web, autenticación y bases de datos.','12 semanas',2800000],
+ ['sql','SQL y bases de datos','Datos e IA','Inicial','Modelado, consultas y bases de datos relacionales.','10 semanas',2300000],
+ ['powerbi','Power BI y visualización de datos','Datos e IA','Intermedio','Modelado, indicadores y tableros interactivos.','10 semanas',2500000],
+ ['data-python','Análisis de datos con Python','Datos e IA','Intermedio','Pandas, limpieza de datos y visualización.','12 semanas',2800000],
+ ['machine-learning','Fundamentos de machine learning','Datos e IA','Intermedio','Preparación de datos, modelos y evaluación.','12 semanas',3000000],
+ ['ia-generativa','IA generativa aplicada','Datos e IA','Inicial','Uso crítico de asistentes, instrucciones y verificación.','8 semanas',2200000],
+ ['ia-apps','Desarrollo de aplicaciones con IA','Datos e IA','Avanzado','APIs de IA, búsqueda en documentos y evaluación.','12 semanas',3200000],
+ ['automatizacion','Automatización con n8n y APIs','Datos e IA','Intermedio','Flujos de trabajo, integraciones y automatización.','10 semanas',2800000],
+ ['cyber','Fundamentos de ciberseguridad','Infraestructura','Inicial','Protección de cuentas, amenazas y buenas prácticas.','10 semanas',2300000],
+ ['redes','Redes y conectividad','Infraestructura','Inicial','Redes locales, direccionamiento y diagnóstico.','12 semanas',2300000],
+ ['linux','Linux y administración de sistemas','Infraestructura','Intermedio','Terminal, permisos, servicios y administración.','12 semanas',2500000],
+ ['cloud','Fundamentos de computación en la nube','Infraestructura','Inicial','Servicios, despliegue y seguridad en la nube.','10 semanas',2600000],
+ ['devops','Docker y prácticas DevOps','Infraestructura','Intermedio','Contenedores, integración y despliegue continuo.','12 semanas',3000000],
+ ['git','Git y trabajo colaborativo en GitHub','Programación','Inicial','Versionado, ramas, revisiones y trabajo en equipo.','6 semanas',1500000],
+ ['testing','Testing de software y automatización','Calidad de software','Intermedio','Casos de prueba, APIs y automatización con Playwright.','12 semanas',2700000],
+ ['mobile','Desarrollo móvil con Flutter','Programación','Intermedio','Interfaces, navegación y aplicaciones multiplataforma.','16 semanas',3000000],
+ ['figma','Figma y diseño de interfaces','Diseño y producto','Inicial','Componentes, sistemas de diseño y prototipos.','8 semanas',2000000],
+ ['productividad','Productividad digital con Microsoft 365','Herramientas digitales','Inicial','Documentos, hojas de cálculo y colaboración en línea.','8 semanas',1600000],
+ ['soporte','Soporte técnico y mantenimiento de PC','Infraestructura','Inicial','Hardware, instalación y resolución de problemas.','12 semanas',2000000],
+ ['accesibilidad','Accesibilidad y diseño web inclusivo','Diseño y producto','Intermedio','Navegación con teclado, contraste y pruebas de interfaces.','8 semanas',2200000],
+ ['seguridad-web','Seguridad de aplicaciones web','Calidad de software','Intermedio','Validación, sesiones y prevención de vulnerabilidades.','10 semanas',2700000],
+];
+export const COURSE_INFO=Object.fromEntries(OFFERINGS.map(([id,name,area,level,description,duration,feeCents])=>[id,{id,name,area,level,description,duration,feeCents}]));
+export const courseInfo=c=>({...{area:'Formación digital',level:'A definir',description:'Una propuesta de formación para desarrollar nuevas habilidades digitales.',duration:'A definir'},...COURSE_INFO[c.id],...Object.fromEntries(Object.entries(c).filter(([key,value])=>!['area','level','description','duration'].includes(key)||value!=null))});

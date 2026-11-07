@@ -1,0 +1,79 @@
+/* 1. Atmósfera y color: azul académico, lavanda y menta. */
+:root{--aula-lavender:#efedfc;--aula-mint:#e5f4f0;--aula-blue:#e7effc;--aula-accent:#5750a1;--aula-wash:#e6eaf6;--aula-card:#f7f8fe;--aula-elevation:0 9px 28px #293b6510}
+:root[data-theme=dark]{--aula-lavender:#292745;--aula-mint:#193a38;--aula-blue:#20334e;--aula-accent:#c0baf9;--aula-wash:#142039;--aula-card:#1b2b43;--aula-elevation:0 9px 28px #050a191f}
+body{background:radial-gradient(ellipse at 90% 8%,#bbb4e438,transparent 45%),radial-gradient(ellipse at 25% 90%,#84c9cc25,transparent 50%),var(--aula-wash)}
+h1{font-family:inherit;font-size:2.65rem;font-weight:750;letter-spacing:-1.3px;line-height:1.16}
+.topbar{background:color-mix(in srgb,var(--surface) 85%,var(--aula-lavender));box-shadow:0 3px 20px #1d305608}
+.topbar .brand-mark{border-radius:10px;background:var(--aula-lavender);color:var(--aula-accent)}
+.module-label{font-size:12px}.academic-sidebar{background:radial-gradient(ellipse at 0 0,#444c8b 0,transparent 65%),linear-gradient(165deg,#172e52,#102e49 70%)}
+.sidebar-brand>span{box-shadow:0 5px 20px #0002;transform:rotate(-5deg)}
+.sidebar-note{background:linear-gradient(130deg,#54619b3d,#68b8bd18);border-color:#627faa80;position:relative;overflow:hidden}
+.sidebar-note::after{content:'';position:absolute;width:85px;height:85px;border-radius:50%;border:14px solid #9bdef00c;right:-34px;bottom:-25px}
+.academic-sidebar .tabs button.active{box-shadow:0 4px 20px #050f2933;border:1px solid #d4f0ff80}
+/* 2. Cabeceras con identidad y una ilustración de formación digital. */
+.page-heading{background:radial-gradient(ellipse at 95% 0%,#6278a765,transparent 65%),linear-gradient(115deg,#27365f,#34497a);border:1px solid #778bb94a;box-shadow:0 10px 28px #26395d14;border-radius:22px;padding:30px 32px}
+.page-heading::after{width:310px;height:310px;right:-120px;bottom:-245px;border:28px solid #b4dff00b}
+.page-heading .eyebrow{color:#c6e9f4;letter-spacing:2px;font-weight:650;margin-bottom:12px}
+.page-heading h1{margin-bottom:12px}.page-heading .subtitle{color:#e0e8f9;line-height:1.7}
+#entry-content>.page-heading{min-height:237px;display:block;padding-bottom:63px}
+#entry-content>.page-heading>div{max-width:calc(100% - 250px)}
+.learning-art{position:absolute;width:310px;height:201px;right:18px;top:15px;object-fit:contain;pointer-events:none}
+#entry-content .required-note{position:absolute;bottom:22px;left:32px;padding:6px 11px;border-radius:7px}
+#courses-panel>.page-heading{background:radial-gradient(ellipse at 75% 10%,#8c84c447,transparent 60%),linear-gradient(115deg,#383560,#535080)}
+#payments-panel>.page-heading{background:radial-gradient(ellipse at 85% 0%,#65b7ae33,transparent 65%),linear-gradient(115deg,#173f52,#275d68)}
+/* 3. Formulario: cada bloque tiene su propio tono y jerarquía. */
+.form-card{background:var(--aula-card);border-color:color-mix(in srgb,var(--line) 75%,var(--aula-accent));box-shadow:var(--aula-elevation);border-radius:18px}
+.form-card[data-section]{border-left:1px solid var(--line);padding:0 25px 26px}
+.form-card[data-section]>.section-heading{margin:0 -25px 24px;padding:20px 25px;border-radius:17px 17px 0 0;border-bottom:1px solid var(--line);background:var(--aula-blue)}
+.form-card[data-section=student]>.section-heading{background:var(--aula-lavender)}
+.form-card[data-section=address]>.section-heading{background:var(--aula-mint)}
+.section-icon{background:#294e7b;border-radius:11px;box-shadow:0 3px 9px #263b5b12;color:#fff;width:39px;height:39px}
+[data-section=student] .section-icon{background:#61558f}[data-section=address] .section-icon{background:#29635b}
+.section-heading h2{font-size:17px}.section-heading p{font-size:12px;margin-top:5px;line-height:1.6}
+.field label{font-size:13px}.field input,.field select,.search-select-control>input{box-shadow:0 2px 4px #1d335904;border-radius:10px}
+.action-bar{background:var(--aula-blue);border-color:var(--line);border-radius:15px;box-shadow:var(--aula-elevation)}
+.button{border-radius:10px}.button.primary{background:linear-gradient(115deg,#294f83,#44588e);box-shadow:0 4px 10px #28437526}.button.primary:hover:not(:disabled){background:#254775;box-shadow:0 6px 14px #28437535}
+.page-heading .button.primary{background:#b9e9eb;color:#193f53;box-shadow:none}
+.summary{background:linear-gradient(160deg,var(--aula-card),var(--aula-lavender));border-radius:18px;box-shadow:var(--aula-elevation)}
+.summary-brand-strip{background:linear-gradient(110deg,#2b406c,#585381);color:#d6f1f7;padding-top:17px;padding-bottom:17px}
+.summary-topline>span:first-child{color:var(--aula-accent);font-weight:650}.completion-line{background:var(--surface);border:1px solid var(--line);box-shadow:none}
+.summary-list>div{padding-bottom:13px;border-bottom:1px dashed var(--line)}.summary-list dt{font-weight:650}.summary-fee{background:var(--aula-blue);border-color:color-mix(in srgb,var(--line) 60%,var(--aula-accent));box-shadow:0 3px 12px #22365d06}
+/* 4. Catálogo: portadas por área, tarjetas sobre el fondo y sin bloque blanco envolvente. */
+#courses-panel>.form-card{background:transparent;border:0;box-shadow:none;padding:0}
+.catalog-filters{padding:22px;background:var(--aula-card);border:1px solid var(--line);border-radius:16px;box-shadow:var(--aula-elevation)}
+#courses-panel>.form-card>.field-help{padding:0 4px;font-size:12px;line-height:1.8}
+#courses-status{display:inline-flex;padding:7px 13px;background:var(--aula-lavender);border:1px solid var(--line);color:var(--aula-accent);font-size:12px;font-weight:650;border-radius:20px;margin:10px 0 0}
+.course-card{--course-cover:#394f86;--course-light:#b4e2fa;--course-tint:var(--aula-blue);background:var(--aula-card);border-radius:18px;box-shadow:var(--aula-elevation);border-color:var(--line)}
+.course-card[data-area="Datos e IA"]{--course-cover:#285f70;--course-light:#a5e6e5;--course-tint:var(--aula-mint)}
+.course-card[data-area="Diseño y producto"]{--course-cover:#69548c;--course-light:#e4ccf8;--course-tint:var(--aula-lavender)}
+.course-card[data-area="Infraestructura"]{--course-cover:#2c655b;--course-light:#b1e5ce;--course-tint:var(--aula-mint)}
+.course-card[data-area="Calidad de software"]{--course-cover:#576737;--course-light:#e0eaaa;--course-tint:var(--aula-mint)}
+.course-card[data-area="Herramientas digitales"]{--course-cover:#855b37;--course-light:#f5ddab;--course-tint:var(--aula-lavender)}
+.course-card .course-card-top{background:radial-gradient(circle at 100% 0,#ffffff1f,transparent 65%),var(--course-cover)!important;color:#fff!important;position:relative;overflow:hidden;min-height:115px;align-items:flex-end;padding-bottom:22px}
+.course-card-top::after{content:'';position:absolute;width:100px;height:100px;border:17px solid #ffffff0b;right:-20px;top:-26px;border-radius:27px;transform:rotate(25deg)}
+.course-card-mark{height:52px;min-width:58px;border-radius:12px;background:#ffffff13;border:1px solid #ffffff30;display:grid;place-items:center;color:var(--course-light);font-size:22px;position:relative;z-index:1}
+.course-area-label{font-size:12px;letter-spacing:.1px;position:relative;z-index:1;align-self:center}.course-level{align-self:flex-start;background:var(--course-tint);padding:4px 9px;border:1px solid var(--line);border-radius:6px;font-size:10px;margin-bottom:12px;color:var(--ink)}
+.course-card h2{font-size:19px}.course-description{font-size:13px;line-height:1.75}.course-facts{border-top:1px dashed var(--line);padding-top:16px;font-size:11px}.course-price{font-size:25px;color:var(--primary);font-weight:650}.course-actions{border-top:1px solid var(--line);padding-top:15px}.course-actions .button{font-size:12px;min-height:39px}
+/* 5. Listas y pagos: superficies diferenciadas y estados reconocibles. */
+.filters,.payment-filters{background:var(--aula-blue);padding:18px;border:1px solid var(--line);border-radius:12px}
+.table-wrap{border:1px solid var(--line);border-radius:13px}th{background:#294f79;color:#edf5ff;font-size:11px;letter-spacing:.35px}tbody tr:nth-child(even){background:var(--aula-blue)}tbody tr:hover{background:var(--soft)}
+.payment-tabs{background:var(--aula-blue);padding:5px;border:1px solid var(--line);width:fit-content;border-radius:12px}.payment-tabs button.active{background:#294f79;color:#fff;box-shadow:0 3px 8px #263f5a25}
+.payment-stat{position:relative;overflow:hidden;box-shadow:var(--aula-elevation);border-radius:17px;border-top-width:4px}.payment-stat::after{content:'';position:absolute;width:100px;height:100px;right:-27px;bottom:-40px;border:16px solid currentColor;opacity:.05;border-radius:50%}.payment-stat>strong{font-weight:650}.payment-stat>small{line-height:1.6}
+.payment-account,.payment-history-row{border:1px solid var(--line);border-radius:13px;background:var(--surface);margin-top:12px;padding:19px 16px;box-shadow:0 2px 6px #173b5b05}.student-avatar{background:var(--aula-lavender);color:var(--aula-accent);border-radius:50%;height:42px;width:42px;border:1px solid var(--line)}
+dialog{background:var(--aula-card);border-radius:20px;border-top:5px solid #6c77ab}dialog h2{font-family:inherit;font-weight:700;font-size:24px}.trash-item{background:var(--aula-blue);border-radius:11px;padding:16px;margin-bottom:10px}
+/* 6. Acceso: misma identidad y algo de textura, sin distracciones. */
+.login-page{background:radial-gradient(ellipse at 10% 10%,#aca9da55,transparent 55%),radial-gradient(ellipse at 90% 90%,#8ccbc73d,transparent 50%),var(--aula-wash)!important}
+.login-layout{border-color:color-mix(in srgb,var(--line) 60%,#6a75a8);box-shadow:0 25px 70px #26355524}
+.login-intro{background:radial-gradient(circle at 100% 0,#8c8ec650,transparent 60%),linear-gradient(155deg,#28355e,#204c65)}
+.login-intro::after{border-width:45px;right:-280px;bottom:-240px;border-color:#a6dfeb0a}.login-intro h1{font-family:inherit;font-weight:700;font-size:41px;line-height:1.2}.login-card{background:var(--aula-card)}.login-card h1{font-family:inherit;font-weight:700;font-size:28px}.demo-access{background:var(--aula-lavender);border:1px solid var(--line)}.login-lock{background:var(--aula-lavender);color:var(--aula-accent)}
+/* 7. Adaptación: el color acompaña, el contenido conserva su espacio. */
+@media(min-width:1600px){.learning-art{right:48px;width:330px;height:214px;top:7px}}
+@media(max-width:1100px){.learning-art{width:230px;right:9px}#entry-content>.page-heading>div{max-width:calc(100% - 205px)}h1{font-size:2.25rem}.page-heading{padding:26px}.course-card h2{font-size:18px}}
+@media(max-width:720px){.page-heading{border-radius:17px;padding:24px}.page-heading h1{font-size:2rem}.learning-art{width:175px;right:-9px;top:10px;height:150px;opacity:.8}#entry-content>.page-heading{min-height:235px;padding:25px 24px 62px}#entry-content>.page-heading>div{max-width:calc(100% - 135px)}#entry-content .required-note{left:24px;font-size:10px;bottom:19px}.form-card[data-section]{padding:0 20px 22px}.form-card[data-section]>.section-heading{margin:0 -20px 21px;padding:18px 20px}.section-heading h2{font-size:15px}.section-icon{width:33px;height:33px}.section-heading p{font-size:11px}.catalog-filters{padding:17px}.filters,.payment-filters{padding:14px}.payment-account{padding:15px 12px}.payment-history-row{padding:16px}.login-intro h1{font-size:34px}}
+@media(max-width:450px){.learning-art{width:110px;height:110px;top:14px;right:-5px}#entry-content>.page-heading>div{max-width:calc(100% - 70px)}#entry-content>.page-heading h1{max-width:190px;font-size:1.9rem}#entry-content>.page-heading .subtitle{max-width:235px;font-size:13px}.page-heading .eyebrow{font-size:9px;letter-spacing:1px}.form-card[data-section]{padding:0 16px 20px}.form-card[data-section]>.section-heading{margin:0 -16px 20px;padding:17px 16px;gap:9px}.section-heading h2{font-size:14px}.section-heading p{font-size:11px}.section-icon{height:30px;width:30px}.section-state{font-size:9px}.login-intro h1{font-size:31px}}
+@media print{dialog{background:#fff;color:#111;border-top:0}.learning-art{display:none}}
+
+/* Portadas fotográficas del catálogo, servidas desde la propia aplicación. */
+.course-card .course-card-top{min-height:180px;height:180px;padding:18px;align-items:flex-end;gap:11px;isolation:isolate}.course-card-top>img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:-2;transition:transform .4s}.course-card-top::before{content:'';position:absolute;inset:0;background:linear-gradient(180deg,#071b2e05 15%,#07192bd9 100%);z-index:-1}.course-card-top::after{display:none}.course-card .course-card-mark{height:38px;min-width:44px;font-size:17px;background:#12273dcc;backdrop-filter:blur(5px);border-color:#ffffff60;border-radius:9px;color:#daf4ff}.course-card .course-area-label{align-self:flex-end;padding-bottom:10px;font-size:12px;color:#fff;font-weight:600;text-shadow:0 1px 4px #0008}.course-card:hover .course-card-top>img{transform:scale(1.035)}
+@media(max-width:540px){.course-card .course-card-top{height:180px}}
+@media(prefers-reduced-motion:reduce){.course-card-top>img{transition:none}.course-card:hover .course-card-top>img{transform:none}}
